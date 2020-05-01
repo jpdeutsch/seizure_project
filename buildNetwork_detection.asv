@@ -1,0 +1,64 @@
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%   Training the Network
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+net = train_network(dsTrain, dsVal, classes);
+
+%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%   Preprocessing the test data
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+testData = prepTestData(datasetPath);
+
+% Datastore for test data
+fdsTest = fileDatastore(testData.fullPath',...
+    'ReadFcn', @(fileName) loadTestData(fileName));
+
+%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%   Run the network on the test data
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+pred = classify(net, fdsTest);
+
+
+%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Helper functions
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%{
+% Given training and validation datastores, creates a neural network and
+% trains the data, returning a trained network.
+%
+% Parameters:
+%   dsTrain - Training data in datastore format. {sequence data} {label}
+%   dsVal - Validation data in datastore format. {sequence data} {label}
+%   classes - Categorical array of classes (labels)
+% Output:
+%   net - Trained neural network
+%}
+function net = train_network(dsTrain, dsVal, classes)
+% scratch neural net
+numFeatures = [128,9,16]; % number of input features (channels)
+numClasses = numel(classes); % number of possible output classifications
+numHiddenUnits = 50; % parameter of lstm networks
+
+% TODO: use network builder to build network, two 
+
+options = trainingOptions('adam',...
+    'ExecutionEnvironment', 'cpu',...
+    'MaxEpochs', 500,...
+    'ValidationData', dsVal,...
+    'ValidationFrequency', 10,...
+    'ValidationPatience', 5,...
+    'GradientThreshold', 2,...
+    'Shuffle', 'never',...
+    'Verbose',0,...
+    'Plots', 'training-progress');
+
+
+net = trainNetwork(dsTrain, layers, options);
+end
