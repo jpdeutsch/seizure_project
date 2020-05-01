@@ -24,26 +24,23 @@ startPatient = 1; endPatient = 4;
 [trainPaths, valPaths, testData] = preprocess_detection(datasetPath,...
     patients,startPatient,endPatient);
 
-%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Put data into datastores for network
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 [dsTrain, dsVal, dsTest] = datastores_detection(trainPaths,valPaths,...
-    testData.fullPath');
+    testData.fullPath',0,8,classes);
 
 %%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %   Training the Network
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+% TODO: allow train network to take in different filter sizes, filter
+% numbers, maxpool sizes, and dropout
+
+% TODO: get inputSize from first data in dsTrain
+
 net = train_network(dsTrain, dsVal, classes, inputSize);
-
-%%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%   Preprocessing the test data
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-testData = prepTestData(datasetPath);
 
 %%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

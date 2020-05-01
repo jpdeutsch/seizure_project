@@ -1,5 +1,5 @@
 function [dsTrain, dsVal, dsTest] = datastores_detection(trainPaths,valPaths,...
-    testPaths,stftScenario,numChannels)
+    testPaths,stftScenario,numChannels,classes)
 
 % Datastore for training data
 dsTrainReal = fileDatastore(trainPaths,'ReadFcn', @(fileName)...
