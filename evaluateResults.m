@@ -16,14 +16,14 @@ plotroc(target,output);
 axesUserData=get(gca,'userdata');
 legend(axesUserData.lines,'ictal','interictal');
 title("Scenario " + scenario);
-saveas(h,strcat(path,"\ROC",num2str(scenario)),'fig');
+saveas(h,strcat(path,"/ROC",num2str(scenario)),'fig');
 close(h);
 
 h=figure();
 [c,cm,ind,per] = confusion(int8(target),int8(output));
 plotconfusion(int8(target),int8(output));
 title("Scenario " + scenario);
-saveas(h,strcat(path,"\Confusion",num2str(scenario)),'fig');
+saveas(h,strcat(path,"/Confusion",num2str(scenario)),'fig');
 close(h);
 
 end

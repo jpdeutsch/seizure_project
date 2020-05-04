@@ -13,8 +13,10 @@ classes = ["ictal", "interictal"];
 patients = ["Dog_"+string(1:4), "Patient_"+string(1:8)];
 
 % Base paths for seizure detection datasets of each patient
-datasetPath = fullfile("E:", "School", "EE5549", "Detection");
-figurePath = fullfile("E:","School","EE5549","Detection","Figures");
+%datasetPath = fullfile("E:", "School", "EE5549", "Detection");
+datasetPath = fullfile("..","seizure_data");
+%figurePath = fullfile("E:","School","EE5549","Detection","Figures");
+figurePath = fullfile("..","Figures");
 
 startPatient = 1; endPatient = 1;
 

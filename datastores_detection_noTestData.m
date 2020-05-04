@@ -83,6 +83,10 @@ elseif strcmp(field, "stft_real")
     %data = normalize(real(stft(data',400,'Window',hann(64))));
     %realData = normalize(real(stft(data',400,'Window',hann(64))));
     %imagData = normalize(imag(stft(data',400,'Window',hann(64))));
+    S = arrayfun(@(row_idx) stft(data(row_idx,:),win,hop,nfft,400),(1:size(data,1)).','uni',false);
+    S = cat(3,S{:});
+    realData = normalize(real(S));
+    imagData = normalize(imag(S));
     data = cat(3,realData,imagData);
 elseif strcmp(field, "stft_imag")
     data = normalize(imag(stft(data',400,'Window',hann(64))));
