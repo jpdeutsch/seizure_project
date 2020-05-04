@@ -6,7 +6,6 @@ clc
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %   Initial Processing of Data
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
 % Classes of all data
 classes = ["ictal", "interictal"];
 
@@ -14,7 +13,8 @@ classes = ["ictal", "interictal"];
 patients = ["Dog_"+string(1:4), "Patient_"+string(1:8)];
 
 % Base paths for seizure detection datasets of each patient
-datasetPath = fullfile("D:", "School", "EE5549", "Detection");
+datasetPath = fullfile("E:", "School", "EE5549", "Detection");
+figurePath = fullfile("E:","School","EE5549","Detection","Figures");
 
 startPatient = 1; endPatient = 2;
 
@@ -34,10 +34,10 @@ C = {filterSize,numFilters,maxPool,dropout,numChannels};
 D = C;
 [D{:}] = ndgrid(C{:});
 scenarios = cell2mat(cellfun(@(m)m(:),D,'uni',0));
-
-
+%%
 for i=1:length(scenarios)
-    
+i
+tic  
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Put data into datastores for network
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -51,6 +51,7 @@ for i=1:length(scenarios)
 tmp = preview(dsTrain);
 inputSize = size(tmp{1});
 
+prog = "Starting Training"
 net = buildNetwork_detection(dsTrain, inputSize, scenarios(i,1), scenarios(i,2), ...
     scenarios(i,3), scenarios(i,4));
 
@@ -59,6 +60,7 @@ net = buildNetwork_detection(dsTrain, inputSize, scenarios(i,1), scenarios(i,2),
 %   Run the network on the test data
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+prog = "Classifying"
 [pred, scores] = classify(net, dsTest);
 
 
@@ -67,6 +69,6 @@ net = buildNetwork_detection(dsTrain, inputSize, scenarios(i,1), scenarios(i,2),
 %   Evaluate Network Performance
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-evaluateResults(dsTestLabel,pred,i);
-
+evaluateResults(dsTestLabel,pred,i,figurePath);
+toc
 end
