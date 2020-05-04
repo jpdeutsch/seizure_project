@@ -1,4 +1,4 @@
-function [trainPaths, testPaths, testData] = preprocess_detection(path,...
+function [trainPaths, testPaths] = preprocess_detection_noTestData(path,...
     patients,startPatient,endPatient)
 % Fraction of data to be in training group
 trainFrac = 1/2;
@@ -52,6 +52,7 @@ for i=startPatient:endPatient
         [interictalPaths{i}(trainInterictal(i)+1:totalInterictal(i))]'];
 end
 testData = 0;
+trainPaths = trainPaths(randperm(length(trainPaths)));
 %{
 [testData, testIctal_idx, testInterictal_idx] = prepTestData(path,patients);
 

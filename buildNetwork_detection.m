@@ -1,63 +1,55 @@
+function net = buildNetwork_detection(dsTrain,inputSize,...
+    filterSize,numFilters,maxPool,dropout)
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%   Training the Network
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+lgraph = layerGraph();
 
-net = train_network(dsTrain, dsVal, classes);
+tempLayers = [
+    imageInputLayer(inputSize,"Name","imageinput_1")
+    convolution2dLayer([filterSize filterSize],numFilters,"Name","conv_1","Padding","same")
+    reluLayer("Name","relu_1")
+    maxPooling2dLayer([maxPool maxPool],"Name","maxpool_1","Padding","same")
+    dropoutLayer(dropout,"Name","dropout_1")
+    convolution2dLayer([filterSize filterSize],numFilters,"Name","conv_2","Padding","same")
+    reluLayer("Name","relu_2")
+    maxPooling2dLayer([maxPool maxPool],"Name","maxpool_2","Padding","same")
+    dropoutLayer(dropout,"Name","dropout_3")
+    convolution2dLayer([filterSize filterSize],numFilters,"Name","conv_5","Padding","same")
+    reluLayer("Name","relu_5")];
+lgraph = addLayers(lgraph,tempLayers);
 
-%%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%   Preprocessing the test data
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+tempLayers = [
+    imageInputLayer(inputSize,"Name","imageinput_2")
+    convolution2dLayer([filterSize filterSize],numFilters,"Name","conv_3","Padding","same")
+    reluLayer("Name","relu_3")
+    maxPooling2dLayer([maxPool maxPool],"Name","maxpool_3","Padding","same")
+    dropoutLayer(dropout,"Name","dropout_2")
+    convolution2dLayer([filterSize filterSize],numFilters,"Name","conv_4","Padding","same")
+    reluLayer("Name","relu_4")
+    maxPooling2dLayer([maxPool maxPool],"Name","maxpool_4","Padding","same")
+    dropoutLayer(dropout,"Name","dropout_4")
+    convolution2dLayer([filterSize filterSize],numFilters,"Name","conv_6","Padding","same")
+    reluLayer("Name","relu_6")];
+lgraph = addLayers(lgraph,tempLayers);
 
-testData = prepTestData(datasetPath);
+tempLayers = [
+    additionLayer(2,"Name","addition")
+    fullyConnectedLayer(2,"Name","fc")
+    softmaxLayer("Name","softmax")
+    classificationLayer("Name","classoutput")];
+lgraph = addLayers(lgraph,tempLayers);
 
-% Datastore for test data
-fdsTest = fileDatastore(testData.fullPath',...
-    'ReadFcn', @(fileName) loadTestData(fileName));
+lgraph = connectLayers(lgraph,"relu_5","addition/in1");
+lgraph = connectLayers(lgraph,"relu_6","addition/in2");
 
-%%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%   Run the network on the test data
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-pred = classify(net, fdsTest);
-
-
-%%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% Helper functions
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%{
-% Given training and validation datastores, creates a neural network and
-% trains the data, returning a trained network.
-%
-% Parameters:
-%   dsTrain - Training data in datastore format. {sequence data} {label}
-%   dsVal - Validation data in datastore format. {sequence data} {label}
-%   classes - Categorical array of classes (labels)
-% Output:
-%   net - Trained neural network
-%}
-function net = train_network(dsTrain, dsVal, classes)
-
-% TODO: use network builder to build network, two branches of image input
-% [stft size, number based on window size, numChannels] -> conv -> relu ->
-% maxpool -> dropout (order may be off) x3, only two dropouts (or maybe
-% maxpools), then addition layer -> fully connected -> softmax -> class
+clear tempLayers;
 
 options = trainingOptions('adam',...
     'ExecutionEnvironment', 'cpu',...
-    'MaxEpochs', 500,...
-    'ValidationData', dsVal,...
-    'ValidationFrequency', 10,...
-    'ValidationPatience', 5,...
+    'MaxEpochs', 350,...
     'GradientThreshold', 2,...
     'Shuffle', 'never',...
-    'Verbose',0,...
-    'Plots', 'training-progress');
+    'Verbose',0);
 
 
-net = trainNetwork(dsTrain, layers, options);
+net = trainNetwork(dsTrain, lgraph, options);
 end

@@ -1,4 +1,4 @@
-function [dsTrain, dsVal, dsTest] = datastores_detection(trainPaths,valPaths,...
+function [dsTrain, dsTest] = datastores_detection_noTestData(trainPaths,...
     testPaths,stftScenario,numChannels,classes)
 
 % Datastore for training data
@@ -12,15 +12,6 @@ dsTrainLabel = fileDatastore(trainPaths,'ReadFcn', @(fileName)...
     loadData(fileName,classes,"label",stftScenario,numChannels));
 
 dsTrain = combine(dsTrainReal, dsTrainImag, dsTrainLabel);
-
-% Datastore for validation data
-dsValData = fileDatastore(valPaths,'ReadFcn', @(fileName)...
-    loadData(fileName,classes,"stft",stftScenario,numChannels));
-
-dsValLabel = fileDatastore(valPaths,'ReadFcn', @(fileName)...
-    loadData(fileName,classes,"label",stftScenario,numChannels));
-
-dsVal = combine(dsValData, dsValLabel);
 
 % Datastore for test data
 dsTestReal = fileDatastore(testPaths,'ReadFcn', @(fileName)...
@@ -63,6 +54,9 @@ end
 %variance of each channel, then pick numChannels of the highest variance
 %channels and only use that data. May want to do this in preprocess section
 %once number decided
+ var =  (1/400)*sum((data-mean(data,2)).^2,2);
+ [~,idx] = sort(var,'descend');
+ data = 
 
 if strcmp(field, "label")
     [~,name] = fileparts(matFile); % extract name of file without file ext

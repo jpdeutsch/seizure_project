@@ -16,38 +16,50 @@ patients = ["Dog_"+string(1:4), "Patient_"+string(1:8)];
 % Base paths for seizure detection datasets of each patient
 datasetPath = fullfile("D:", "School", "EE5549", "Detection");
 
-startPatient = 1; endPatient = 4;
+startPatient = 1; endPatient = 2;
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Preprocess the data
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-[trainPaths, testPaths, testData] = preprocess_detection(datasetPath,...
+[trainPaths, testPaths] = preprocess_detection_noTestData(datasetPath,...
     patients,startPatient,endPatient);
-%%
+
+filterSize = [2, 4];
+numFilters = [32, 64];
+maxPool = [3, 6];
+dropout = [0.2, 0.5]; 
+numChannels = [4, 8];
+
+C = {filterSize,numFilters,maxPool,dropout,numChannels};
+D = C;
+[D{:}] = ndgrid(C{:});
+scenarios = cell2mat(cellfun(@(m)m(:),D,'uni',0));
+
+
+for i=1:length(scenarios)
+    
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Put data into datastores for network
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-[dsTrain, dsVal, dsTest] = datastores_detection(trainPaths,testPaths,...
-    testData.fullPath',0,8,classes);
+[dsTrain, dsTest, dsTestLabel] = datastores_detection_noTestData(trainPaths,testPaths,...
+    0,scenarios(i,5),classes);
 
 %%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %   Training the Network
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+tmp = preview(dsTrain);
+inputSize = size(tmp{1});
 
-% TODO: allow train network to take in different filter sizes, filter
-% numbers, maxpool sizes, and dropout
-
-% TODO: get inputSize from first data in dsTrain
-
-net = train_network(dsTrain, dsVal, classes, inputSize);
+net = buildNetwork_detection(dsTrain, inputSize, scenarios(i,1), scenarios(i,2), ...
+    scenarios(i,3), scenarios(i,4));
 
 %%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %   Run the network on the test data
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-pred = classify(net, fdsTest);
+[pred, scores] = classify(net, dsTest);
 
 
 %%
@@ -55,15 +67,6 @@ pred = classify(net, fdsTest);
 %   Evaluate Network Performance
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-accuracy = sum(pred == testData.label)./numel(pred);
+evaluateResults(dsTestLabel,pred,i);
 
-% Plot ROC Curve
-actual = [(testData.label=="ictal")'; (testData.label=="interictal")'];
-predicted = [(pred=="ictal")'; (pred=="interictal")'];
-plotroc(actual, predicted);
-axesUserData=get(gca,'userdata');
-legend(axesUserData.lines,'ictal', 'interictal');
-
-% Calculate Confusion Matrix
-[c, cm, ind, per] = confusion(int8(actual), int8(predicted));
-plotconfusion(int8(actual),int8(predicted));
+end

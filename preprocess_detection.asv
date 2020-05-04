@@ -1,31 +1,42 @@
-function [trainPaths, valPaths, testData] = preprocess_detection(path, patients, startPatient, endPatient)
-
-[dsTrain, dsVal] = preProcess(path, patients, startPatient,endPatient);
+function [trainPaths, valPaths, testData] = preprocess_detection(path,...
+    patients,startPatient,endPatient)
+% Fraction of data to be in training group
+trainFrac = 3/4;
 
 % Full path to each patient's data
 pathPatients = fullfile(path, patients);
 
-% File path for ictal data of all patients
-ictal_data = sortFiles(pathPatients,...
-    fullfile(pathPatients, "*_ictal*.mat"));
-% File path for interictal data of all patients
-interictal_data = sortFiles(pathPatients,...
-    fullfile(pathPatients, "*_interictal*.mat"));
+% General paths to all prelabeled data
+ictal_paths_gen = fullfile(pathPatients, "*_ictal*.mat");
+interictal_paths_gen = fullfile(pathPatients, "*_interictal*.mat");
 
-% Fraction of data to be in training group
-trainFrac = 3/4;
+% File objects for all prelabeled data
+ictalFiles = cellfun(@(x) dir(x),ictal_paths_gen,'UniformOutput',false);
+interictalFiles = cellfun(@(x) dir(x),interictal_paths_gen,'UniformOutput',false);
 
+% Full path to all prelabeled data
+ictalPaths = cellfun(@(file) arrayfun(@(struct) fullfile(struct.folder,struct.name),...
+    file,'UniformOutput',false),ictalFiles,'UniformOutput',false);
+interictalPaths = cellfun(@(file) arrayfun(@(struct) fullfile(struct.folder,struct.name),...
+    file,'UniformOutput',false),interictalFiles,'UniformOutput',false);
+
+% TODO: use these numbers to create minibatches for training with a mixture
+% of ictal and interictal data
 % Array of the amount of each patient's ictal data segments
-totalIctal = cellfun(@(c) length(c), ictal_data,'UniformOutput',true);
+totalIctal = cellfun(@(c) length(c), ictalFiles,'UniformOutput',true);
 % Array of the amount of each patient's interictal data segments
-totalInterictal = cellfun(@(c) length(c), interictal_data,...
+totalInterictal = cellfun(@(c) length(c), interictalFiles,...
     'UniformOutput',true);
+
+% TODO: perform above getting the ictal data for each patient on the test
+% data so can combine the test and training data, then split out test
 
 % Arrays of the amount of each patient for training data
 trainIctal = ceil(totalIctal.*trainFrac);
 trainInterictal = ceil(totalInterictal.*trainFrac);
 
-% TODO: hardcoded for just dogs right now
+% TODO: hardcoded for just dogs right now, use startPatient and endPatient
+% to preallocate array and speed things up
 % Total ictal and interictal data for all patients
 %trainingPath = strings(1,sum(trainIctal(1:4))+sum(trainInterictal(1:4)));
 %validationPath = strings(1,sum(totalIctal(1:4)-trainIctal(1:4))+...
@@ -35,12 +46,14 @@ trainPaths = []; valPaths = [];
 % TODO: hardcoded for just dogs right now
 for i=startPatient:endPatient
     trainPaths = [trainPaths,...
-        [ictal_data{1,i}{1:trainIctal(i)}],...
-        [interictal_data{1,i}{1:trainInterictal(i)}]];
+        [ictalPaths{i}(1:trainIctal(i))]',...
+        [interictalPaths{i}(1:trainInterictal(i))]'];
     valPaths = [valPaths,...
-        [ictal_data{1,i}{trainIctal(i)+1:totalIctal(i)}],...
-        [interictal_data{1,i}{trainInterictal(i)+1:totalInterictal(i)}]];
+        [ictalPaths{i}(trainIctal(i)+1:totalIctal(i))]',...
+        [interictalPaths{i}(trainInterictal(i)+1:totalInterictal(i))]'];
 end
+
+testData = prepTestData(path);
 
 end
 
@@ -50,45 +63,37 @@ end
 % Parameters:
 %   dataPath - Path to where the test .csv data is located
 % Output:
-%   correct - Table of modified test data to be used in network testing
+%   testData - Table of modified test data to be used in network testing
 %}
-function correct = prepTestData(dataPath)
+function [testData, ictal, interictal] = prepTestData(dataPath)
 % Load data from .csv into Matlab
-correct = readtable(fullfile(dataPath, "SzDetectionAnswerKey.csv"));
+testData = readtable(fullfile(dataPath, "SzDetectionAnswerKey.csv"));
 
 % TODO: hardcoded for just dog data right now
-correct = correct(1:13641,:); % just to get only dog tests
+testData = testData(1:13641,:); % just to get only dog tests
 
 % Extract patient info from file name
-splitName = split(correct.clip, "_");
-correct.patient = string(splitName(:,1))+"_"+string(splitName(:,2));
+splitName = split(testData.clip, "_");
+testData.patient = string(splitName(:,1))+"_"+string(splitName(:,2));
 
 % Goes through each row of table and constructs full file path for data
-correct.fullPath = rowfun(@(x,y) fullfile(dataPath,x,y), ...
-    correct, 'InputVariables', {'patient', 'clip'}, ...
+testData.fullPath = rowfun(@(x,y) fullfile(dataPath,x,y), ...
+    testData, 'InputVariables', {'patient', 'clip'}, ...
     'OutputFormat', 'uniform');
 
 % Adds label name to table based on seizure column
-correct.label(correct.seizure==1) = categorical("ictal");
-correct.label(correct.seizure==-1) = categorical("interictal");
+testData.label(testData.seizure==1) = categorical("ictal");
+testData.label(testData.seizure==-1) = categorical("interictal");
+
+byPatient = arrayfun(@(x) find(testData.patient==x),patients,'UniformOutput',false);
+
+ictal = cell(1,12); interictal = {};
+for i=1:12
+    ictal{end+1} = find(testData.seizure(cell2mat(byPatient(i)))==1);
+    interictal{end+1} = find(testData.seizure(cell2mat(byPatient(i)))==-1);
 end
 
-%{
-% Given the root folders for each patient, sorts the folder names into
-% the correct sequential order.
-% 
+ictalTestPaths = cellfun(@(i) testData.fullPath(i),ictal,'UniformOutput',false);
+interictalTestPaths = cellfun(@(i) testData.fullPath(i),interictal,'UniformOutput',false);
 
-%}
-function sorted_files = sortFiles(root, label)
-% Gets files in each subdirectory of the root data folder
-S = arrayfun(@(n)dir(n), label, 'uni', 0);
-
-% Sorts file names of each subdirectory
-N = cellfun(@(n)natsortfiles({n.name}), S, 'uni', 0);
-
-% From the sorted file names, reconstruct the entire datapath for each
-sorted_files = cell(1,12); % initialize empty cell array for full file path
-for i = 1:12
-    sorted_files{i} = cellfun(@(n)fullfile(root(i),n),N{i},'uni',0);
-end
 end
