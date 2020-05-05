@@ -50,6 +50,11 @@ elseif stftScenario == 2
     hop = wlen/4;
     nfft = 128;
     win = hann(wlen);
+elseif stftScenario == 3
+    wlen = 128;
+    hop = wlen/4;
+    nfft = 256;
+    win = hann(wlen);
 else
     wlen = 64;
     hop = wlen/4;

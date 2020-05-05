@@ -31,14 +31,14 @@ ri.patients = 3:6;
 % Preprocess the data
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 [trainPaths, trainLabels, testPaths, testLabels] = ...
-    preprocess_detection_noTestData(datasetPath,patients,ri.startPatient,ri.endPatient);
+    preprocess_detection_noTestData(datasetPath,patients,ri.patients);
 
 filterSize = [2 4];
 numFilters = [32 64];
-maxPool = [3 6];
-dropout = [0.2 0.5]; 
-numChannels = [4 8];
-stftScenario = [1 2 3];
+maxPool = [2];
+dropout = [0.5]; 
+numChannels = [4];
+stftScenario = [2];
 
 % creates cell matrix for every trial version of network
 C = {filterSize,numFilters,maxPool,dropout,numChannels,stftScenario};
@@ -47,6 +47,7 @@ D = C;
 scenarios = cell2mat(cellfun(@(m)m(:),D,'uni',0));
 ri.scenarios = scenarios;
 save('../Figures/runInfo.mat','-struct','ri');
+save('../all_data/runInfo.mat','-struct','ri');
 
 
 %%

@@ -15,4 +15,5 @@ close(h);
 c = conf.c;
 
 save(strcat(path,"/confusion",num2str(scenario),".mat"),'-struct','conf');
+save(strcat("../all_data/confusion",num2str(scenario),".mat"),'-struct','conf');
 end
