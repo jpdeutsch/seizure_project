@@ -3,6 +3,7 @@ close all
 clc
 
 
+%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %   Initial Processing of Data
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -14,14 +15,16 @@ patients = ["Dog_"+string(1:4), "Patient_"+string(1:8)];
 
 % Base paths for seizure detection datasets of each patient
 datasetPath = fullfile("E:", "School", "EE5549", "Detection");
+%datasetPath = "\\Client\E$\School\EE5549\Detection";
 figurePath = fullfile("E:","School","EE5549","Detection","Figures");
+%figurePath = "\\Client\E$\School\EE5549\Detection\Figures";
 
-startPatient = 1; endPatient = 1;
+startPatient = 1; endPatient = 2;
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Preprocess the data
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-[trainPaths, trainLabels, testPaths, testLabels] = preprocess_detection_noTestData(datasetPath,...
+[trainPaths, testPaths] = preprocess_detection_noTestData(datasetPath,...
     patients,startPatient,endPatient);
 
 filterSize = [2];
@@ -42,15 +45,16 @@ tic
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Put data into datastores for network
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-[dsTrain, dsTest] = datastores_detection_noTestData(trainPaths,testPaths,...
-    0,scenarios(i,5),classes,trainLabels,testLabels);
+[dsTrain, dsTest, dsTestLabel] = datastores_detection_noTestData(trainPaths,testPaths,...
+    0,scenarios(i,5),classes);
 %[dsTrain, dsTest, dsTestLabel] = datastores_detection_noTestData(trainPaths,testPaths,...
 %    0,0,classes);
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %   Training the Network
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-inputSize = size(preview(dsTrain));
+tmp = preview(dsTrain);
+inputSize = size(tmp{1});
 
 prog = "Starting Training"
 net = buildNetwork_detection(dsTrain, inputSize, scenarios(i,1), scenarios(i,2), ...
@@ -70,6 +74,6 @@ prog = "Classifying"
 %   Evaluate Network Performance
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-evaluateResults(testLabels,pred,i,figurePath);
+evaluateResults(dsTestLabel,pred,i,figurePath);
 toc
 end

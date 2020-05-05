@@ -1,4 +1,4 @@
-function [trainPaths, trainLabels, testPaths, testLabels] = preprocess_detection_noTestData(path,...
+function [trainPaths, testPaths] = preprocess_detection_noTestData(path,...
     patients,startPatient,endPatient)
 % Fraction of data to be in training group
 trainFrac = 1/2;
@@ -52,13 +52,9 @@ for i=startPatient:endPatient
         [interictalPaths{i}(trainInterictal(i)+1:totalInterictal(i))]'];
 end
 
-trainLabels = strings(1,length(trainPaths));
-trainLabels(contains(trainPaths,"_ictal")) = "ictal";
-trainLabels(contains(trainPaths,"_interictal")) = "interictal";
-
-testLabels = strings(1,length(testPaths));
-testLabels(contains(testPaths,"_ictal")) = "ictal";
-testLabels(contains(testPaths,"_interictal")) = "interictal";
+trainLabels = cell(
+trainLabels(find(contains(trainPaths,"_ictal"))) = {categorical("ictal",classes)};
+trainLabels(find(contains(trainPaths,"_interictal"))) = {categorical("interictal",classes)};
 
 %testData = 0;
 %trainPaths = trainPaths(randperm(length(trainPaths)));

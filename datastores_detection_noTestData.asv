@@ -1,9 +1,8 @@
 function [dsTrain, dsTest, dsTestLabel] = datastores_detection_noTestData(trainPaths,...
-    testPaths,stftScenario,numChannels,classes,trainLabels,testLabels)
+    testPaths,stftScenario,numChannels,classes)
 
-dsTrain = imageDatastore(trainPaths,'FileExtensions','.mat','ReadFcn', @(f)...
-    loadData(f,classes,"stft_real",stftScenario,numChannels),...
-    'Labels',categorical(trainLabels));
+%dsTrain = imageDatastore(trainPaths,'FileExtensions','.mat','ReadFcn', @(f)...
+    loadData(f,classes,"stft_real",stftScenario,numChannels));
 %{
 % Datastore for training data
 dsTrainReal = fileDatastore(trainPaths,'ReadFcn', @(fileName)...
@@ -17,28 +16,20 @@ dsTrainLabel = fileDatastore(trainPaths,'ReadFcn', @(fileName)...
 
 dsTrain = combine(dsTrainReal, dsTrainImag, dsTrainLabel);
 %dsTrain = combine(dsTrainReal, dsTrainLabel);
-%}
-    
-%{
+
 % Datastore for test data
 dsTestReal = fileDatastore(testPaths,'ReadFcn', @(fileName)...
     loadData(fileName,classes,"stft_real",stftScenario,numChannels));
 
-dsTestImag = fileDatastore(testPaths,'ReadFcn', @(fileName)...
-    loadData(fileName,classes,"stft_imag",stftScenario,numChannels));
+%dsTestImag = fileDatastore(testPaths,'ReadFcn', @(fileName)...
+%    loadData(fileName,classes,"stft_imag",stftScenario,numChannels));
 
 dsTestLabel = fileDatastore(testPaths,'ReadFcn', @(fileName)...
     loadData(fileName,classes,"label",stftScenario,numChannels));
 
-dsTest = combine(dsTestReal,dsTestImag);
-%dsTest = dsTestReal;
+%dsTest = combine(dsTestReal,dsTestImag);
+dsTest = dsTestReal;
 %}
-dsTest = imageDatastore(testPaths,'FileExtensions','.mat','ReadFcn', @(f)...
-    loadData(f,classes,"stft_real",stftScenario,numChannels),...
-    'Labels',categorical(testLabels));
-
-dsTestLabel = 0;
-    
 end
 
 %{
@@ -69,21 +60,16 @@ var =  (1/400)*sum((data-mean(data,2)).^2,2);
 [~,idx] = sort(var,'descend');
 data = data(idx(1:numChannels),:);
 
-wlen = 64;
-hop = wlen/4;
-nfft = 128;
-win = hann(wlen);
-
 if strcmp(field, "label")
     [~,name] = fileparts(matFile); % extract name of file without file ext
     name_parts = split(name, "_"); % split up name at underscores
     % Assigns category for data to relevant part of file name
     data = categorical(name_parts(3), classes);
 elseif strcmp(field, "stft_real")
-    %data = normalize(real(stft(data',400,'Window',hann(64))));
+    data = normalize(real(stft(data',400,'Window',hann(64))));
     %realData = normalize(real(stft(data',400,'Window',hann(64))));
     %imagData = normalize(imag(stft(data',400,'Window',hann(64))));
-    data = cat(3,realData,imagData);
+    %data = reshape([realData(:) imagData(:)]',2*size(realData,1),[]);
 elseif strcmp(field, "stft_imag")
     data = normalize(imag(stft(data',400,'Window',hann(64))));
 elseif strcmp(field, "stft")
