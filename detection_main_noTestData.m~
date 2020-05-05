@@ -25,30 +25,26 @@ datasetPath = fullfile("..","all_data");
 % Path for lab computer
 figurePath = fullfile("..","Figures");
 
-ri.patients = 3:6;
+startPatient = 1; endPatient = 1;
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Preprocess the data
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-[trainPaths, trainLabels, testPaths, testLabels] = ...
-    preprocess_detection_noTestData(datasetPath,patients,ri.startPatient,ri.endPatient);
+[trainPaths, trainLabels, testPaths, testLabels] = preprocess_detection_noTestData(datasetPath,...
+    patients,startPatient,endPatient);
 
-filterSize = [2 4];
-numFilters = [32 64];
-maxPool = [3 6];
-dropout = [0.2 0.5]; 
-numChannels = [4 8];
-stftScenario = [1 2 3];
+filterSize = [2];
+numFilters = [32];
+maxPool = [3];
+dropout = [0.2]; 
+numChannels = [4];
+%stftScenario = [1 2];
 
-% creates cell matrix for every trial version of network
-C = {filterSize,numFilters,maxPool,dropout,numChannels,stftScenario};
+%
+C = {filterSize,numFilters,maxPool,dropout,numChannels};
 D = C;
 [D{:}] = ndgrid(C{:});
 scenarios = cell2mat(cellfun(@(m)m(:),D,'uni',0));
-ri.scenarios = scenarios;
-save('../Figures/runInfo.mat','-struct','ri');
-
-
 %%
 for i=1:size(scenarios,1)
 i
@@ -66,8 +62,8 @@ tic
 
 inputSize = size(preview(dsTrain));
 prog = "Starting Training"
-net = buildNetwork_detection(dsTrain,inputSize,scenarios(i,1),scenarios(i,2),...
-    scenarios(i,3),scenarios(i,4));
+net = buildNetwork_detection(dsTrain, inputSize, scenarios(i,1), scenarios(i,2), ...
+    scenarios(i,3), scenarios(i,4));
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -83,6 +79,6 @@ prog = "Classifying"
 %   Evaluate Network Performance
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-confusion_value = evaluateResults(testLabels,pred,i,figurePath)
+evaluateResults(testLabels,pred,i,figurePath);
 toc
 end

@@ -35,28 +35,21 @@ else
     data = tmp.data;
 end
 
-% Calculate variance of each channel and only take the most variant
 var =  (1/400)*sum((data-mean(data,2)).^2,2);
 [~,idx] = sort(var,'descend');
 data = data(idx(1:numChannels),:);
 
 if stftScenario == 1
-    wlen = 64;
-    hop = wlen/4;
-    nfft = 128;
-    win = hann(wlen);
-elseif stftScenario == 2
-    wlen = 128;
-    hop = wlen/4;
-    nfft = 128;
-    win = hann(wlen);
+    
+elseif 
+    
 else
-    wlen = 64;
-    hop = wlen/4;
-    nfft = 256;
-    win = hann(wlen);
-end
 
+end
+wlen = 64;
+hop = wlen/4;
+nfft = 128;
+win = hann(wlen);
 
 if strcmp(field, "label")
     [~,name] = fileparts(matFile); % extract name of file without file ext
