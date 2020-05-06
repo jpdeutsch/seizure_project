@@ -25,7 +25,7 @@ datasetPath = fullfile("..","all_data");
 % Path for lab computer
 figurePath = fullfile("..","Figures");
 
-ri.patients = [3 5];
+ri.patients = [3];
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Preprocess the data
@@ -35,7 +35,7 @@ ri.patients = [3 5];
 
 filterSize = [3];
 numFilters = [32];
-maxPool = [8];
+maxPool = [4];
 dropout = [0.5]; 
 numChannels = [4];
 stftScenario = [4];

@@ -46,8 +46,8 @@ function data = loadData(matFile,classes,field,stftScenario,numChannels)
 tmp = load(matFile); % struct loaded in from memory
 
 freq = ceil(tmp.freq);
-if freq ~= 400
-    data = resample(tmp.data',400,freq)';
+if freq ~= 200
+    data = resample(tmp.data',200,freq)';
 else 
     data = tmp.data;
 end
