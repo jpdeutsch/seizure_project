@@ -1,8 +1,8 @@
-function [dsTrain, dsTest] = datastores_detection_noTestData(trainPaths,...
-    testPaths,trainLabels,testLabels)
 %function [dsTrain, dsTest] = datastores_detection_noTestData(trainPaths,...
-%    testPaths,stftScenario,numChannels,classes,trainLabels,testLabels)
-%{
+%    testPaths,trainLabels,testLabels)
+function [dsTrain, dsTest] = datastores_detection_noTestData(trainPaths,...
+    testPaths,stftScenario,numChannels,classes,trainLabels,testLabels)
+
 dsTrain = imageDatastore(trainPaths,'FileExtensions','.mat','ReadFcn', @(f)...
     loadData(f,classes,"stft_real",stftScenario,numChannels),...
     'Labels',categorical(trainLabels));
@@ -10,12 +10,22 @@ dsTrain = imageDatastore(trainPaths,'FileExtensions','.mat','ReadFcn', @(f)...
 dsTest = imageDatastore(testPaths,'FileExtensions','.mat','ReadFcn', @(f)...
     loadData(f,classes,"stft_real",stftScenario,numChannels),...
     'Labels',categorical(testLabels));
-  %}
-    
+  
+
+%{
 dsTrain = imageDatastore(trainPaths,'FileExtensions','.mat','ReadFcn', @(f)...
-    load(f,'data'),'Labels',categorical(trainLabels));
+    loadD(f),'Labels',categorical(trainLabels));
 dsTest = imageDatastore(testPaths,'FileExtensions','.mat','ReadFcn',@(f)...
-    load(f,'data'),'Labels',categorical(testLabels));
+    loadD(f),'Labels',categorical(testLabels));
+%}
+
+
+end
+
+
+function data = loadD(matFile)
+tmp = load(matFile);
+data = tmp.data;
 end
 
 %{
@@ -63,7 +73,7 @@ elseif stftScenario == 3
     nfft = 256;
     win = hann(wlen);
 else
-    wlen = 64;
+    wlen = 16;
     hop = wlen/4;
     nfft = 256;
     win = hann(wlen);

@@ -25,7 +25,7 @@ datasetPath = fullfile("..","all_data");
 % Path for lab computer
 figurePath = fullfile("..","Figures");
 
-ri.patients = 3:6;
+ri.patients = [3 5];
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Preprocess the data
@@ -33,12 +33,12 @@ ri.patients = 3:6;
 [trainPaths, trainLabels, testPaths, testLabels] = ...
     preprocess_detection_noTestData(datasetPath,patients,ri.patients);
 
-filterSize = [2 4];
-numFilters = [32 64];
-maxPool = [2];
+filterSize = [3];
+numFilters = [32];
+maxPool = [8];
 dropout = [0.5]; 
 numChannels = [4];
-stftScenario = [2];
+stftScenario = [4];
 
 % creates cell matrix for every trial version of network
 C = {filterSize,numFilters,maxPool,dropout,numChannels,stftScenario};
@@ -57,8 +57,10 @@ tic
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Put data into datastores for network
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%[dsTrain, dsTest] = datastores_detection_noTestData(trainPaths,testPaths,...
+%    trainLabels,testLabels);
 [dsTrain, dsTest] = datastores_detection_noTestData(trainPaths,testPaths,...
-    0,scenarios(i,5),classes,trainLabels,testLabels);
+    scenarios(i,6),scenarios(i,5),classes,trainLabels,testLabels);
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -84,6 +86,6 @@ prog = "Classifying"
 %   Evaluate Network Performance
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-confusion_value = evaluateResults(testLabels,pred,i,figurePath)
+confusion_value = evaluateResults(testLabels,pred,i,figurePath,scores)
 toc
 end

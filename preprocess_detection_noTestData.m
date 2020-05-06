@@ -26,10 +26,13 @@ totalIctal = cellfun(@(c) length(c), ictalFiles,'uni',true);
 % Array of the amount of each patient's interictal data segments
 totalInterictal = cellfun(@(c) length(c), interictalFiles,...
     'uni',true);
+interToIctal = totalInterictal./totalIctal;
 
 % Arrays of the amount of each patient for training data
 trainIctal = ceil(totalIctal.*trainFrac);
-trainInterictal = ceil(totalInterictal.*trainFrac);
+%trainInterictal = ceil(totalInterictal.*trainFrac);
+%trainInterictal = floor(totalIctal.*1.4);
+trainInterictal = totalIctal.*(floor(min(interToIctal,2)));
 
 % TODO: hardcoded for just dogs right now, use startPatient and endPatient
 % to preallocate array and speed things up
@@ -47,6 +50,16 @@ for i=whichPatients
         [ictalPaths{i}(trainIctal(i)+1:totalIctal(i))]',...
         [interictalPaths{i}(trainInterictal(i)+1:totalInterictal(i))]'];
 end
+%{
+for i=whichPatients
+    trainPaths = [trainPaths,...
+        [ictalPaths{i}(1:trainIctal(i))]',...
+        [interictalPaths{i}(1:trainInterictal(i))]'];
+    testPaths = [testPaths,...
+        [ictalPaths{i}(trainIctal(i)+1:totalIctal(i))]',...
+        [interictalPaths{i}(trainInterictal(i)+1:totalInterictal(i))]'];
+end
+%}
 
 % Creates arrays of the correct labels for each train and test data set
 trainLabels = strings(1,length(trainPaths));
