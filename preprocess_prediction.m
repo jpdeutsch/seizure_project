@@ -1,78 +1,78 @@
 function [trainPaths, trainLabels, testPaths, testLabels, valPaths, valLabels] = ...
     preprocess_detection(path,patient)
 % Full path to patient data
-patientPath = fullfile(path,patient);
+patientPath = fullfile(path,patient,patient);
 
 % Paths to ictal data and interictal data for this patient
-[ictalPaths,interictalPaths] = prepPatient(patientPath);
+[preictalPaths,interictalPaths] = prepPatient(patientPath);
 
 % Paths to the ictal and interictal test data for this patient
-[testIctal,testInterictal] = prepTestData(path,patientPath,patient);
+[testPreictal,testInterictal] = prepTestData(path,patientPath,patient);
     
 % Concatenate the ictal and interictal paths into one for all training data
-trainPaths = vertcat(ictalPaths,interictalPaths);
+trainPaths = vertcat(preictalPaths,interictalPaths);
 
 % Generate labels for training data
-trainLabels = vertcat(repmat("ictal",[length(ictalPaths) 1]),...
+trainLabels = vertcat(repmat("preictal",[length(preictalPaths) 1]),...
     repmat("interictal",[length(interictalPaths) 1]));
 
 % Random indices in test ictal data to include in validation
-valSplitIctal = randperm(length(testIctal));
+valSplitPreictal = randperm(length(testPreictal));
 
 % Random indices in test interictal data to include in validation
 valSplitInterictal = randperm(length(testInterictal));
 
 % Fraction of test data to include in validation
-fracIctalVal = floor(0.2*length(testIctal));
+fracPreictalVal = floor(0.2*length(testPreictal));
 fracInterictalVal = floor(0.2*length(testInterictal));
 
 % Ictal validation data
-valIctal = testIctal(valSplitIctal(1:fracIctalVal));
+valPreictal = testPreictal(valSplitPreictal(1:fracPreictalVal));
 
 % Interictal validation data
 valInterictal = testInterictal(valSplitInterictal(1:fracInterictalVal));
 
 % Concatenate ictal and interictal into one validation path
-valPaths = vertcat(valIctal,valInterictal);
+valPaths = vertcat(valPreictal,valInterictal);
 
 % Generate labels for validation data
-valLabels = vertcat(repmat("ictal",[length(valIctal),1]),...
+valLabels = vertcat(repmat("preictal",[length(valPreictal),1]),...
     repmat("interictal",[length(valInterictal),1]));
 
 % Take remainingg test data and set to testIctal/testInterictal
-testIctal = testIctal(valSplitIctal(fracIctalVal+1:end));
+testPreictal = testPreictal(valSplitPreictal(fracPreictalVal+1:end));
 testInterictal = testInterictal(valSplitInterictal(fracInterictalVal+1:end));
 
 % Concatenate ictal and interictal test data and generate labels
-testPaths = vertcat(testIctal,testInterictal);
-testLabels = vertcat(repmat("ictal",[length(testIctal),1]),...
+testPaths = vertcat(testPreictal,testInterictal);
+testLabels = vertcat(repmat("preictal",[length(testPreictal),1]),...
     repmat("interictal",[length(testInterictal) 1]));
 
 end
 
-function [ictalPaths,interictalPaths] = prepPatient(path)
+function [preictalPaths,interictalPaths] = prepPatient(path)
 
 % Get all ictal clips in patient directory
-ictalClips = dir(fullfile(path,"*_ictal_*.mat"));
+preictalClips = dir(fullfile(path,"*_preictal_*.mat"));
 
 % Get all interictal clips in patient directory
 interictalClips = dir(fullfile(path,"*_interictal_*.mat"));
 
 % Get the full path for each ictal file
-ictalPaths = arrayfun(@(f) fullfile(path,ictalClips(f).name),...
-    [1:length(ictalClips)],'uni',false)';
+preictalPaths = arrayfun(@(f) fullfile(path,preictalClips(f).name),...
+    [1:length(preictalClips)],'uni',false)';
 
 % Get the full path for each interictal file
 interictalPaths = arrayfun(@(f) fullfile(path,interictalClips(f).name),...
     [1:length(interictalClips)],'uni',false)';
 
 %oversample ictal signals
-over_idx = randperm(length(ictalPaths),floor(0.2*length(ictalPaths)));
-ictalPaths = vertcat(ictalPaths,ictalPaths(over_idx));
+%over_idx = randperm(length(preictalPaths),floor(0.2*length(preictalPaths)));
+%preictalPaths = vertcat(preictalPaths,preictalPaths(over_idx));
 
 %undersample interictal signals
-under_idx = randperm(length(interictalPaths),floor(0.7*length(interictalPaths)));
-interictalPaths = interictalPaths(under_idx);
+%under_idx = randperm(length(interictalPaths),floor(0.7*length(interictalPaths)));
+%interictalPaths = interictalPaths(under_idx);
 
 end
 
@@ -84,9 +84,10 @@ end
 % Output:
 %   testData - Table of modified test data to be used in network testing
 %}
-function [testIctal, testInterictal] = prepTestData(dataPath,patientPath,patient)
+function [testPreictal, testInterictal] = prepTestData(dataPath,patientPath,patient)
 % Load data from .csv into Matlab
-testData = readtable(fullfile(dataPath, "SzDetectionAnswerKey.csv"));
+testData = readtable(fullfile(dataPath, "SzPrediction_answer_key.csv"),...
+    'Delimiter',',');
 
 % Get the test data just for this patient
 patientTests = testData(contains(testData.clip,patient),:);
@@ -96,16 +97,18 @@ patientTests = testData(contains(testData.clip,patient),:);
     'uni',false);
 splitName = split(name',"_");
 
+%{
 % Create column with the updated name using leading zeros in the number
 patientTests.newName = arrayfun(@(f) [strjoin([splitName(f,1:end-1),...
     num2str(str2double(splitName{f,end}),'%04.f')],"_"), '.mat'],...
     (1:size(patientTests)),'uni',false)';
+%}
 
 % Paths to all ictal segments in the test data for this patient
-testIctal = fullfile(patientPath,...
-    patientTests.newName(patientTests.seizure==1));
+testPreictal = fullfile(patientPath,...
+    patientTests.clip(patientTests.preictal==1));
 % Paths to all interictal segments in the test data for this patient
 testInterictal = fullfile(patientPath,...
-    patientTests.newName(patientTests.seizure==-1));
+    patientTests.clip(patientTests.preictal==0));
 
 end

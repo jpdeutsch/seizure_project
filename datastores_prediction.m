@@ -19,9 +19,11 @@ end
 function data = loadData(matFile,numChannels)
 
 tmp = load(matFile); % struct loaded in from memory
+name = fields(tmp);
+tmp = tmp.(name{1});
 
 % Downsample the data to 200Hz
-freq = ceil(tmp.freq);
+freq = ceil(tmp.sampling_frequency);
 if freq ~= 200
     data = resample(tmp.data',200,freq)';
 else 

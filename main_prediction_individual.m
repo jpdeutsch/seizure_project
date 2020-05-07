@@ -6,19 +6,19 @@ clc
 %   Initial Processing of Data
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Classes of all data
-classes = ["ictal", "interictal"];
+classes = ["preictal", "interictal"];
 
 % All patients in the stu
-patients = ["Dog_"+string(1:4), "Patient_"+string(1:8)];
+patients = ["Dog_"+string(1:5), "Patient_"+string(1:2)];
 
 % Base paths for seizure detection datasets of each patient
 % Path for mounted drive
-datasetPath = fullfile("..","all_data");
+datasetPath = fullfile("..","all_data","Prediction","seizure-prediction");
 
 % Path for lab computer
 figurePath = fullfile("..","Figures");
 
-ri.patients = [7];
+ri.patients = [1];
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Preprocess the data
@@ -37,8 +37,8 @@ D = C;
 [D{:}] = ndgrid(C{:});
 scenarios = cell2mat(cellfun(@(m)m(:),D,'uni',0));
 ri.scenarios = scenarios;
-save('../Figures/runInfo.mat','-struct','ri');
-save('../all_data/runInfo.mat','-struct','ri');
+%save('../Figures/runInfo.mat','-struct','ri');
+%save('../all_data/runInfo.mat','-struct','ri');
 
 
 %%
@@ -46,13 +46,13 @@ for p=ri.patients
 i=1;
 p
 [trainPaths, trainLabels, testPaths, testLabels,valPaths,valLabels] = ...
-    preprocess_detection(datasetPath,patients(ri.patients(p)));
+    preprocess_prediction(datasetPath,patients(ri.patients(p)));
 
 tic  
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Put data into datastores for network
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-[dsTrain, dsTest,dsVal] = datastores_detection_noTestData(trainPaths,trainLabels,...
+[dsTrain, dsTest,dsVal] = datastores_prediction(trainPaths,trainLabels,...
     valPaths,valLabels,testPaths,testLabels,numChannels);
 
 

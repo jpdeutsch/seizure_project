@@ -13,7 +13,7 @@ patients = ["Dog_"+string(1:4), "Patient_"+string(1:8)];
 
 % Base paths for seizure detection datasets of each patient
 % Path for mounted drive
-datasetPath = fullfile("..","all_data");
+datasetPath = fullfile("..","all_data","Detection");
 
 % Path for lab computer
 figurePath = fullfile("..","Figures");
