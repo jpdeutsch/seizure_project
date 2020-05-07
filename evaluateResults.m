@@ -3,9 +3,7 @@ function c = evaluateResults(testLabels,pred,scenario,path,scores)
 target = [(strcmp(testLabels',"ictal"));(strcmp(testLabels',"interictal"))];
 output = [(pred=="ictal")'; (pred=="interictal")'];
 
-
-
-[X,Y,~,AUC] = perfcurve(testLabels,scores(:,1)',"ictal");
+[~,~,~,AUC] = perfcurve(testLabels,scores(:,1)',"ictal");
 AUC
 h=figure();
 plotroc(target,output);
