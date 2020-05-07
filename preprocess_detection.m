@@ -1,63 +1,145 @@
-function [trainPaths, testPaths, testData] = preprocess_detection(path,...
-    patients,startPatient,endPatient)
+function [trainPaths, trainLabels, testPaths, testLabels, valPaths, valLabels] = ...
+    preprocess_detection(path,patients,whichPatients,numChannels)
 % Fraction of data to be in training group
 trainFrac = 1/2;
+downsample = 200;
 
-% Full path to each patient's data
-pathPatients = fullfile(path, patients);
+trainPaths = {}; testPaths = {};
+trainLabels = {}; testLabels = {};
+valPaths = {}; valLabels = {};
 
-% General paths to all prelabeled data
-ictal_paths_gen = fullfile(pathPatients, "*_ictal*.mat");
-interictal_paths_gen = fullfile(pathPatients, "*_interictal*.mat");
+for i=whichPatients
+    patientPath = fullfile(path,patients(i));
+    [ictalPaths,interictalPaths] = prepPatient(patientPath);
+    [testIctal,testInterictal] = prepTestData(path,patientPath,patients(i));
+    
+%{    
+    ictalData = cell(length(ictalPaths),1);
+    parfor i=1:length(ictalPaths)
+    
+        file = load(ictalPaths{i});
+    
+        freq = ceil(file.freq);
+        if freq ~= downsample
+            data = resample(file.data',downsample,freq)';
+        else 
+            data = file.data;
+        end
+    
+        % Calculate variance of each channel and only take the most variant
+        var =  (1/200)*sum((data-mean(data,2)).^2,2);
+        [~,idx] = sort(var,'descend');
+        ictalData{i} = data(idx(1:numChannels),:);
+    
+    end
+    
+    interictalData = cell(length(interictalPaths),1); 
+    parfor i=1:length(interictalPaths)
+    
+        file = load(interictalPaths{i});
+    
+        freq = ceil(file.freq);
+        if freq ~= downsample
+            data = resample(file.data',downsample,freq)';
+        else 
+            data = file.data;
+        end
+    
+        % Calculate variance of each channel and only take the most variant
+        var =  (1/200)*sum((data-mean(data,2)).^2,2);
+        [~,idx] = sort(var,'descend');
+        interictalData{i} = data(idx(1:numChannels),:);
+       
+    end
+    
+    ictalTestData = cell(length(testIctal),1);
+    parfor i=1:length(testIctal)
+    
+        file = load(testIctal{i});
+    
+        freq = ceil(file.freq);
+        if freq ~= downsample
+            data = resample(file.data',downsample,freq)';
+        else 
+            data = file.data;
+        end
+    
+        % Calculate variance of each channel and only take the most variant
+        var =  (1/200)*sum((data-mean(data,2)).^2,2);
+        [~,idx] = sort(var,'descend');
+        ictalTestData{i} = data(idx(1:numChannels),:);
+    
+    end
+    
+    interictalTestData = cell(length(testInterictal),1);
+    parfor i=1:length(testInterictal)
+    
+        file = load(testInterictal{i});
+    
+        freq = ceil(file.freq);
+        if freq ~= downsample
+            data = resample(file.data',downsample,freq)';
+        else 
+            data = file.data;
+        end
+    
+        % Calculate variance of each channel and only take the most variant
+        var =  (1/downsample)*sum((data-mean(data,2)).^2,2);
+        [~,idx] = sort(var,'descend');
+        interictalTestData{i} = data(idx(1:numChannels),:);
+    
+    end
+    %}
+    
+    %trainPaths = vertcat(trainPaths,ictalData,interictalData);
+    trainPaths = vertcat(trainPaths,ictalPaths,interictalPaths);
+    trainLabels = vertcat(trainLabels,repmat("ictal",[length(ictalPaths) 1]),...
+        repmat("interictal",[length(interictalPaths) 1]));
+    
+    valSplitIctal = randperm(length(testIctal));
+    valSplitInterictal = randperm(length(testInterictal));
+    %valSplitIctal = randperm(length(ictalTestData));
+    %valSplitInterictal = randperm(length(interictalTestData));
+    valIctal = testIctal(valSplitIctal(1:floor(0.2*length(testIctal))));
+    valInterictal = testInterictal(valSplitInterictal(1:floor(0.2*length(testInterictal))));
+    valPaths = vertcat(valIctal,valInterictal);
+    valLabels = vertcat(repmat("ictal",[length(valIctal),1]),...
+        repmat("interictal",[length(valInterictal),1]));
+    
+    
+    %ictalTestData = ictalTestData(valSplitIctal(floor(0.2*length(ictalTestData))+1:end));
+    %interictalTestData = interictalTestData(valSplitInterictal(floor(0.2*length(interictalTestData))+1:end));
+    testIctal = testIctal(valSplitIctal(floor(0.2*length(testIctal))+1:end));
+    testInterictal = testInterictal(valSplitInterictal(floor(0.2*length(testInterictal))+1:end));
 
-% File objects for all prelabeled data
-ictalFiles = cellfun(@(x) dir(x),ictal_paths_gen,'UniformOutput',false);
-interictalFiles = cellfun(@(x) dir(x),interictal_paths_gen,'UniformOutput',false);
-
-% Full path to all prelabeled data
-ictalPaths = cellfun(@(file) arrayfun(@(struct) fullfile(struct.folder,struct.name),...
-    file,'UniformOutput',false),ictalFiles,'UniformOutput',false);
-interictalPaths = cellfun(@(file) arrayfun(@(struct) fullfile(struct.folder,struct.name),...
-    file,'UniformOutput',false),interictalFiles,'UniformOutput',false);
-
-% TODO: use these numbers to create minibatches for training with a mixture
-% of ictal and interictal data
-% Array of the amount of each patient's ictal data segments
-totalIctal = cellfun(@(c) length(c), ictalFiles,'UniformOutput',true);
-% Array of the amount of each patient's interictal data segments
-totalInterictal = cellfun(@(c) length(c), interictalFiles,...
-    'UniformOutput',true);
-
-% TODO: perform above getting the ictal data for each patient on the test
-% data so can combine the test and training data, then split out test
-
-% Arrays of the amount of each patient for training data
-trainIctal = ceil(totalIctal.*trainFrac);
-trainInterictal = ceil(totalInterictal.*trainFrac);
-
-% TODO: hardcoded for just dogs right now, use startPatient and endPatient
-% to preallocate array and speed things up
-% Total ictal and interictal data for all patients
-%trainingPath = strings(1,sum(trainIctal(1:4))+sum(trainInterictal(1:4)));
-%validationPath = strings(1,sum(totalIctal(1:4)-trainIctal(1:4))+...
-%    sum(totalInterictal(1:4)-trainInterictal(1:4)));
-trainPaths = []; testPaths = [];
-
-for i=startPatient:endPatient
-    trainPaths = [trainPaths,...
-        [ictalPaths{i}(1:trainIctal(i))]',...
-        [interictalPaths{i}(1:trainInterictal(i))]'];
-    testPaths = [testPaths,...
-        [ictalPaths{i}(trainIctal(i)+1:totalIctal(i))]',...
-        [interictalPaths{i}(trainInterictal(i)+1:totalInterictal(i))]'];
+    
+    %testPaths = vertcat(testPaths,ictalTestData,interictalTestData);
+    testPaths = vertcat(testPaths,testIctal,testInterictal);
+    testLabels = vertcat(testLabels,repmat("ictal",[length(testIctal),1]),...
+        repmat("interictal",[length(testInterictal) 1]));
 end
-testData = 0;
-%{
-[testData, testIctal_idx, testInterictal_idx] = prepTestData(path,patients);
 
-ictalTestPaths = cellfun(@(i) testData.fullPath(i),testIctal_idx,'UniformOutput',false);
-interictalTestPaths = cellfun(@(i) testData.fullPath(i),testInterictal_idx,'UniformOutput',false);
-%}
+end
+
+function [ictalPaths,interictalPaths] = prepPatient(path)
+ictalClips = dir(fullfile(path,"*_ictal_*.mat"));
+interictalClips = dir(fullfile(path,"*_interictal_*.mat"));
+testClips = dir(fullfile(path,"*_test_*.mat"));
+
+ictalPaths = arrayfun(@(f) fullfile(path,ictalClips(f).name),...
+    [1:length(ictalClips)],'uni',false)';
+
+interictalPaths = arrayfun(@(f) fullfile(path,interictalClips(f).name),...
+    [1:length(interictalClips)],'uni',false)';
+
+%oversample ictal signals
+over_idx = randperm(length(ictalPaths),floor(0.2*length(ictalPaths)));
+ictalPaths = vertcat(ictalPaths,ictalPaths(over_idx));
+
+%undersample interictal signals
+under_idx = randperm(length(interictalPaths),floor(0.7*length(interictalPaths)));
+interictalPaths = interictalPaths(under_idx);
+
 end
 
 %{
@@ -68,32 +150,22 @@ end
 % Output:
 %   testData - Table of modified test data to be used in network testing
 %}
-function [testData, ictal, interictal] = prepTestData(dataPath,patients)
+function [testIctal, testInterictal] = prepTestData(dataPath,patientPath,patient)
 % Load data from .csv into Matlab
 testData = readtable(fullfile(dataPath, "SzDetectionAnswerKey.csv"));
 
-% TODO: hardcoded for just dog data right now
-testData = testData(1:13641,:); % just to get only dog tests
+patientTests = testData(contains(testData.clip,patient),:);
+[~, name, ~] = arrayfun(@(f) fileparts(patientTests.clip{f}),[1:size(patientTests)],...
+    'uni',false);
+splitName = split(name',"_");
+patientTests.newName = arrayfun(@(f) [strjoin([splitName(f,1:end-1),...
+    num2str(str2double(splitName{f,end}),'%04.f')],"_"), '.mat'],...
+    (1:size(patientTests)),'uni',false)';
 
-% Extract patient info from file name
-splitName = split(testData.clip, "_");
-testData.patient = string(splitName(:,1))+"_"+string(splitName(:,2));
 
-% Goes through each row of table and constructs full file path for data
-testData.fullPath = rowfun(@(x,y) fullfile(dataPath,x,y), ...
-    testData, 'InputVariables', {'patient', 'clip'}, ...
-    'OutputFormat', 'uniform');
-
-% Adds label name to table based on seizure column
-testData.label(testData.seizure==1) = categorical("ictal");
-testData.label(testData.seizure==-1) = categorical("interictal");
-
-byPatient = arrayfun(@(x) find(testData.patient==x),patients,'UniformOutput',false);
-
-% index of the ictal and interictal segments for each patient
-ictal = cellfun(@(p) find(testData.seizure(p)==1),byPatient,...
-    'UniformOutput',false);
-interictal = cellfun(@(p) find(testData.seizure(p)==-1),byPatient,...
-    'UniformOutput',false);
+testIctal = fullfile(patientPath,...
+    patientTests.newName(patientTests.seizure==1));
+testInterictal = fullfile(patientPath,...
+    patientTests.newName(patientTests.seizure==-1));
 
 end

@@ -1,16 +1,21 @@
 %function [dsTrain, dsTest] = datastores_detection_noTestData(trainPaths,...
 %    testPaths,trainLabels,testLabels)
-function [dsTrain, dsTest] = datastores_detection_noTestData(trainPaths,...
-    testPaths,stftScenario,numChannels,classes,trainLabels,testLabels)
+function [dsTrain, dsTest,dsVal] = datastores_detection_noTestData(trainPaths,...
+    testPaths,stftScenario,numChannels,classes,trainLabels,testLabels,...
+    valPaths,valLabels)
 
-dsTrain = imageDatastore(trainPaths,'FileExtensions','.mat','ReadFcn', @(f)...
+
+dsTrain = imageDatastore([trainPaths{:}],'FileExtensions','.mat','ReadFcn', @(f)...
     loadData(f,classes,"stft_real",stftScenario,numChannels),...
     'Labels',categorical(trainLabels));
     
 dsTest = imageDatastore(testPaths,'FileExtensions','.mat','ReadFcn', @(f)...
     loadData(f,classes,"stft_real",stftScenario,numChannels),...
     'Labels',categorical(testLabels));
-  
+
+dsVal = imageDatastore(valPaths,'FileExtensions','.mat','ReadFcn', @(f)...
+    loadData(f,classes,"stft_real",stftScenario,numChannels),...
+    'Labels',categorical(valLabels));
 
 %{
 dsTrain = imageDatastore(trainPaths,'FileExtensions','.mat','ReadFcn', @(f)...
@@ -53,10 +58,10 @@ else
 end
 
 % Calculate variance of each channel and only take the most variant
-var =  (1/400)*sum((data-mean(data,2)).^2,2);
+var =  (1/200)*sum((data-mean(data,2)).^2,2);
 [~,idx] = sort(var,'descend');
 data = data(idx(1:numChannels),:);
-
+%{
 if stftScenario == 1
     wlen = 64;
     hop = wlen/4;
@@ -75,7 +80,7 @@ elseif stftScenario == 3
 else
     wlen = 16;
     hop = wlen/4;
-    nfft = 256;
+    nfft = 128;
     win = hann(wlen);
 end
 
@@ -86,17 +91,17 @@ if strcmp(field, "label")
     % Assigns category for data to relevant part of file name
     data = categorical(name_parts(3), classes);
 elseif strcmp(field, "stft_real")
-    S = arrayfun(@(row_idx) stft(data(row_idx,:),win,hop,nfft,400),...
+    S = arrayfun(@(row_idx) stft(data(row_idx,:),win,hop,nfft,200),...
         (1:size(data,1)).','uni',false);
     S = cat(3,S{:}); % change stft results into "stacked" image
     realData = normalize(real(S)); % real parts of stft
     imagData = normalize(imag(S)); % imaginary parts of stft
     data = cat(3,realData,imagData);
 elseif strcmp(field, "stft_imag")
-    data = normalize(imag(stft(data',400,'Window',hann(64))));
+    data = normalize(imag(stft(data',200,'Window',hann(64))));
 elseif strcmp(field, "stft")
-    tmpStft = stft(data',400);
+    tmpStft = stft(data',200);
     data = {real(tmpStft), imag(tmpStft)};
 end
-
+%}
 end
