@@ -1,0 +1,72 @@
+function [dsIctal] = savePreprocessed(origPath,newPath,patients)
+
+origPatientPaths = fullfile(origPath,patients);
+newPatientPaths = fullfile(newPath,patients);
+
+ictal_paths = fullfile(origPatientPaths, "*_ictal*.mat");
+interictal_paths = fullfile(origPatientPaths, "*_interictal*.mat");
+
+ic = ictal_paths;
+in = interictal_paths;
+
+dsIctal = imageDatastore(ic,'FileExtensions','.mat','ReadFcn', @(f)...
+    loadData(f,0,"stft",2,4),...
+    'LabelsSource', 'foldernames');
+
+end
+
+function data = loadData(matFile,classes,field,stftScenario,numChannels)
+% TODO: have switch statement for stftScenario, which will do different stft
+%window lengths/types depending on scenario number, once decided will want
+%to move to preprocess secion
+
+tmp = load(matFile); % struct loaded in from memory
+
+freq = ceil(tmp.freq);
+if freq ~= 400
+    data = resample(tmp.data',400,freq)';
+else 
+    data = tmp.data;
+end
+
+% Calculate variance of each channel and only take the most variant
+var =  (1/400)*sum((data-mean(data,2)).^2,2);
+[~,idx] = sort(var,'descend');
+data = data(idx(1:numChannels),:);
+
+if stftScenario == 1
+    wlen = 64;
+    hop = wlen/4;
+    nfft = 128;
+    win = hann(wlen);
+elseif stftScenario == 2
+    wlen = 128;
+    hop = wlen/4;
+    nfft = 128;
+    win = hann(wlen);
+elseif stftScenario == 3
+    wlen = 128;
+    hop = wlen/4;
+    nfft = 256;
+    win = hann(wlen);
+else
+    wlen = 64;
+    hop = wlen/4;
+    nfft = 256;
+    win = hann(wlen);
+end
+
+
+if strcmp(field, "stft")
+    S = arrayfun(@(row_idx) stft(data(row_idx,:),win,hop,nfft,400),...
+        (1:size(data,1)).','uni',false);
+    S = cat(3,S{:}); % change stft results into "stacked" image
+    realData = normalize(real(S)); % real parts of stft
+    imagData = normalize(imag(S)); % imaginary parts of stft
+    data = cat(3,realData,imagData);
+elseif strcmp(field, "stft")
+    tmpStft = stft(data',400);
+    data = {real(tmpStft), imag(tmpStft)};
+end
+
+end

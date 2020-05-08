@@ -1,0 +1,105 @@
+function [trainPaths, testPaths] = preprocess_detection_noTestData(path,...
+    patients,startPatient,endPatient)
+% Fraction of data to be in training group
+trainFrac = 1/2;
+
+% Full path to each patient's data
+pathPatients = fullfile(path, patients);
+
+% General paths to all prelabeled data
+ictal_paths_gen = fullfile(pathPatients, "*_ictal*.mat");
+interictal_paths_gen = fullfile(pathPatients, "*_interictal*.mat");
+
+% File objects for all prelabeled data
+ictalFiles = cellfun(@(x) dir(x),ictal_paths_gen,'UniformOutput',false);
+interictalFiles = cellfun(@(x) dir(x),interictal_paths_gen,'UniformOutput',false);
+
+% Full path to all prelabeled data
+ictalPaths = cellfun(@(file) arrayfun(@(struct) fullfile(struct.folder,struct.name),...
+    file,'UniformOutput',false),ictalFiles,'UniformOutput',false);
+interictalPaths = cellfun(@(file) arrayfun(@(struct) fullfile(struct.folder,struct.name),...
+    file,'UniformOutput',false),interictalFiles,'UniformOutput',false);
+
+% TODO: use these numbers to create minibatches for training with a mixture
+% of ictal and interictal data
+% Array of the amount of each patient's ictal data segments
+totalIctal = cellfun(@(c) length(c), ictalFiles,'UniformOutput',true);
+% Array of the amount of each patient's interictal data segments
+totalInterictal = cellfun(@(c) length(c), interictalFiles,...
+    'UniformOutput',true);
+
+% TODO: perform above getting the ictal data for each patient on the test
+% data so can combine the test and training data, then split out test
+
+% Arrays of the amount of each patient for training data
+trainIctal = ceil(totalIctal.*trainFrac);
+trainInterictal = ceil(totalInterictal.*trainFrac);
+
+% TODO: hardcoded for just dogs right now, use startPatient and endPatient
+% to preallocate array and speed things up
+% Total ictal and interictal data for all patients
+%trainingPath = strings(1,sum(trainIctal(1:4))+sum(trainInterictal(1:4)));
+%validationPath = strings(1,sum(totalIctal(1:4)-trainIctal(1:4))+...
+%    sum(totalInterictal(1:4)-trainInterictal(1:4)));
+trainPaths = []; testPaths = [];
+
+for i=startPatient:endPatient
+    trainPaths = [trainPaths,...
+        [ictalPaths{i}(1:trainIctal(i))]',...
+        [interictalPaths{i}(1:trainInterictal(i))]'];
+    testPaths = [testPaths,...
+        [ictalPaths{i}(trainIctal(i)+1:totalIctal(i))]',...
+        [interictalPaths{i}(trainInterictal(i)+1:totalInterictal(i))]'];
+end
+
+trainLabels = cell(
+trainLabels(find(contains(trainPaths,"_ictal"))) = {categorical("ictal",classes)};
+trainLabels(find(contains(trainPaths,"_interictal"))) = {categorical("interictal",classes)};
+
+%testData = 0;
+%trainPaths = trainPaths(randperm(length(trainPaths)));
+%{
+[testData, testIctal_idx, testInterictal_idx] = prepTestData(path,patients);
+
+ictalTestPaths = cellfun(@(i) testData.fullPath(i),testIctal_idx,'UniformOutput',false);
+interictalTestPaths = cellfun(@(i) testData.fullPath(i),testInterictal_idx,'UniformOutput',false);
+%}
+end
+
+%{
+% Manipulates test data labels to be used in testing the neural network.
+%
+% Parameters:
+%   dataPath - Path to where the test .csv data is located
+% Output:
+%   testData - Table of modified test data to be used in network testing
+%}
+function [testData, ictal, interictal] = prepTestData(dataPath,patients)
+% Load data from .csv into Matlab
+testData = readtable(fullfile(dataPath, "SzDetectionAnswerKey.csv"));
+
+% TODO: hardcoded for just dog data right now
+testData = testData(1:13641,:); % just to get only dog tests
+
+% Extract patient info from file name
+splitName = split(testData.clip, "_");
+testData.patient = string(splitName(:,1))+"_"+string(splitName(:,2));
+
+% Goes through each row of table and constructs full file path for data
+testData.fullPath = rowfun(@(x,y) fullfile(dataPath,x,y), ...
+    testData, 'InputVariables', {'patient', 'clip'}, ...
+    'OutputFormat', 'uniform');
+
+% Adds label name to table based on seizure column
+testData.label(testData.seizure==1) = categorical("ictal");
+testData.label(testData.seizure==-1) = categorical("interictal");
+
+byPatient = arrayfun(@(x) find(testData.patient==x),patients,'UniformOutput',false);
+
+% index of the ictal and interictal segments for each patient
+ictal = cellfun(@(p) find(testData.seizure(p)==1),byPatient,...
+    'UniformOutput',false);
+interictal = cellfun(@(p) find(testData.seizure(p)==-1),byPatient,...
+    'UniformOutput',false);
+
+end

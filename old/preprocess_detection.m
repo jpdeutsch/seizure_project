@@ -1,0 +1,164 @@
+function [trainPaths, trainLabels, testPaths, testLabels, valPaths, valLabels] = ...
+    preprocess_detection(path,patient,numChannels,downsample)
+% Full path to patient data
+patientPath = fullfile(path,patient);
+
+% Paths to ictal data and interictal data for this patient
+[ictalPaths,interictalPaths] = prepPatient(patientPath);
+
+% Paths to the ictal and interictal test data for this patient
+[testIctal,testInterictal] = prepTestData(path,patientPath,patient);
+
+
+ictalData = zeros(numChannels,downsample,1,length(ictalPaths));
+parfor i=1:length(ictalPaths)
+    
+    file = load(ictalPaths{i});
+    
+    freq = ceil(file.freq);
+    if freq ~= downsample
+        data = resample(file.data',downsample,freq)';
+    else 
+        data = file.data;
+    end
+    
+    % Calculate variance of each channel and only take the most variant
+    var =  (1/downsample)*sum((data-mean(data,2)).^2,2);
+    [~,idx] = sort(var,'descend');
+    ictalData(:,:,:,i) = data(idx(1:numChannels),:);
+    
+end
+    
+interictalData = zeros(numChannels,downsample,1,length(interictalPaths));
+parfor i=1:length(interictalPaths)
+   
+    file = load(interictalPaths{i});
+    
+    freq = ceil(file.freq);
+    if freq ~= downsample
+        data = resample(file.data',downsample,freq)';
+    else 
+        data = file.data;
+    end
+    
+    % Calculate variance of each channel and only take the most variant
+    var =  (1/downsample)*sum((data-mean(data,2)).^2,2);
+    [~,idx] = sort(var,'descend');
+    interictalData(:,:,:,i) = data(idx(1:numChannels),:);
+       
+end
+
+%TODO: change this to do work with k-SMOTE prior to concatenating the ictal
+%and interictal data
+%TODO: should be able to use parallel toolbox to do kmeans clustering
+% Note: potentially will have to take variance of each channel in the data
+% and use that to represent data. Some how have to take the 12x200 data and
+% turn it into 1x200 (I think) to use the kmeans function in matlab
+trainPaths = cat(4,ictalData,interictalData);
+
+
+% Concatenate the ictal and interictal paths into one for all training data
+%trainPaths = vertcat(ictalPaths,interictalPaths);
+
+% Generate labels for training data
+trainLabels = categorical(vertcat(repmat("ictal",[length(ictalPaths) 1]),...
+    repmat("interictal",[length(interictalPaths) 1])));
+
+
+
+%% Don't need to tuch this part of the function, use datastores for validation
+% and test sets
+
+% Random indices in test ictal data to include in validation
+valSplitIctal = randperm(length(testIctal));
+
+% Random indices in test interictal data to include in validation
+valSplitInterictal = randperm(length(testInterictal));
+
+% Fraction of test data to include in validation
+fracIctalVal = floor(0.2*length(testIctal));
+fracInterictalVal = floor(0.2*length(testInterictal));
+
+% Ictal validation data
+valIctal = testIctal(valSplitIctal(1:fracIctalVal));
+
+% Interictal validation data
+valInterictal = testInterictal(valSplitInterictal(1:fracInterictalVal));
+
+% Concatenate ictal and interictal into one validation path
+valPaths = vertcat(valIctal,valInterictal);
+
+% Generate labels for validation data
+valLabels = vertcat(repmat("ictal",[length(valIctal),1]),...
+    repmat("interictal",[length(valInterictal),1]));
+
+% Take remainingg test data and set to testIctal/testInterictal
+testIctal = testIctal(valSplitIctal(fracIctalVal+1:end));
+testInterictal = testInterictal(valSplitInterictal(fracInterictalVal+1:end));
+
+% Concatenate ictal and interictal test data and generate labels
+testPaths = vertcat(testIctal,testInterictal);
+testLabels = vertcat(repmat("ictal",[length(testIctal),1]),...
+    repmat("interictal",[length(testInterictal) 1]));
+
+end
+
+function [ictalPaths,interictalPaths] = prepPatient(path)
+
+% Get all ictal clips in patient directory
+ictalClips = dir(fullfile(path,"*_ictal_*.mat"));
+
+% Get all interictal clips in patient directory
+interictalClips = dir(fullfile(path,"*_interictal_*.mat"));
+
+% Get the full path for each ictal file
+ictalPaths = arrayfun(@(f) fullfile(path,ictalClips(f).name),...
+    [1:length(ictalClips)],'uni',false)';
+
+% Get the full path for each interictal file
+interictalPaths = arrayfun(@(f) fullfile(path,interictalClips(f).name),...
+    [1:length(interictalClips)],'uni',false)';
+
+%oversample ictal signals
+%over_idx = randperm(length(ictalPaths),floor(0.2*length(ictalPaths)));
+%ictalPaths = vertcat(ictalPaths,ictalPaths(over_idx));
+
+%undersample interictal signals
+%under_idx = randperm(length(interictalPaths),floor(0.7*length(interictalPaths)));
+%interictalPaths = interictalPaths(under_idx);
+
+end
+
+%{
+% Manipulates test data labels to be used in testing the neural network.
+%
+% Parameters:
+%   dataPath - Path to where the test .csv data is located
+% Output:
+%   testData - Table of modified test data to be used in network testing
+%}
+function [testIctal, testInterictal] = prepTestData(dataPath,patientPath,patient)
+% Load data from .csv into Matlab
+testData = readtable(fullfile(dataPath, "SzDetectionAnswerKey.csv"));
+
+% Get the test data just for this patient
+patientTests = testData(contains(testData.clip,patient),:);
+
+% Get the file name for this clip
+[~, name, ~] = arrayfun(@(f) fileparts(patientTests.clip{f}),[1:size(patientTests)],...
+    'uni',false);
+splitName = split(name',"_");
+
+% Create column with the updated name using leading zeros in the number
+patientTests.newName = arrayfun(@(f) [strjoin([splitName(f,1:end-1),...
+    num2str(str2double(splitName{f,end}),'%04.f')],"_"), '.mat'],...
+    (1:size(patientTests)),'uni',false)';
+
+% Paths to all ictal segments in the test data for this patient
+testIctal = fullfile(patientPath,...
+    patientTests.newName(patientTests.seizure==1));
+% Paths to all interictal segments in the test data for this patient
+testInterictal = fullfile(patientPath,...
+    patientTests.newName(patientTests.seizure==-1));
+
+end
