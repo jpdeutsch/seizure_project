@@ -1,4 +1,4 @@
-sclear
+clear
 close all
 clc
 
@@ -24,20 +24,25 @@ ri.patients = [3];
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Preprocess the data
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+trainPaths = {}; trainLabels = {}; testPaths = {}; testLabels = {};
+valPaths = {}; valLabels = {};
 for p=ri.patients
-    [trainPath,trainLabel,testPath,testLabel,valPaths,valLabels] = ...
-        preprocess_detection(datasetPath,patients,ri.patients);
+    [trP,trL,tP,tL,vP,vL] = preprocess_detection(datasetPath,patients(p));
+    trainPaths = vertcat(trainPaths,trP);
+    trainLabels = vertcat(trainLabels,trL);
+    testPaths = vertcat(testPaths,tP);
+    testLabels = vertcat(testLabels,tL);
+    valPaths = vertcat(valPaths,vP);
+    valLabels = vertcat(valLabels,vL);
 end
 
 filterSize = [3];
 numFilters = [32];
-maxPool = [4];
-dropout = [0.5]; 
 numChannels = [4];
 stftScenario = [4];
 
 % creates cell matrix for every trial version of network
-C = {filterSize,numFilters,maxPool,dropout,numChannels,stftScenario};
+C = {filterSize,numFilters,numChannels,stftScenario};
 D = C;
 [D{:}] = ndgrid(C{:});
 scenarios = cell2mat(cellfun(@(m)m(:),D,'uni',0));
@@ -53,10 +58,8 @@ tic
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Put data into datastores for network
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%[dsTrain, dsTest] = datastores_detection_noTestData(trainPaths,testPaths,...
-%    trainLabels,testLabels);
-[dsTrain, dsTest] = datastores_detection_noTestData(trainPaths,testPaths,...
-    scenarios(i,6),scenarios(i,5),classes,trainLabels,testLabels);
+[dsTrain,dsTest,dsVal] = datastores_detection_noTestData(trainPaths,trainLabels,...
+    valPaths,valLabels,testPaths,testLabels,scenarios(4));
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -65,8 +68,8 @@ tic
 
 inputSize = size(preview(dsTrain));
 prog = "Starting Training"
-net = buildNetwork_detection(dsTrain,inputSize,scenarios(i,1),scenarios(i,2),...
-    scenarios(i,3),scenarios(i,4));
+net = buildNetwork_detection(dsTrain,dsVal,inputSize,scenarios(1),...
+    scenarios(2),scenarios(3));
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

@@ -8,7 +8,47 @@ patientPath = fullfile(path,patient);
 
 % Paths to the ictal and interictal test data for this patient
 [testIctal,testInterictal] = prepTestData(path,patientPath,patient);
+
+%{
+ictalData = cell(length(ictalPaths),1);
+parfor i=1:length(ictalPaths)
     
+    file = load(ictalPaths{i});
+    
+    freq = ceil(file.freq);
+    if freq ~= downsample
+        data = resample(file.data',downsample,freq)';
+    else 
+        data = file.data;
+    end
+    
+    % Calculate variance of each channel and only take the most variant
+    var =  (1/200)*sum((data-mean(data,2)).^2,2);
+    [~,idx] = sort(var,'descend');
+    ictalData{i} = data(idx(1:numChannels),:);
+    
+end
+    
+interictalData = cell(length(interictalPaths),1); 
+parfor i=1:length(interictalPaths)
+   
+    file = load(interictalPaths{i});
+    
+    freq = ceil(file.freq);
+    if freq ~= downsample
+        data = resample(file.data',downsample,freq)';
+    else 
+        data = file.data;
+    end
+    
+    % Calculate variance of each channel and only take the most variant
+    var =  (1/200)*sum((data-mean(data,2)).^2,2);
+    [~,idx] = sort(var,'descend');
+    interictalData{i} = data(idx(1:numChannels),:);
+       
+end
+%}
+
 % Concatenate the ictal and interictal paths into one for all training data
 trainPaths = vertcat(ictalPaths,interictalPaths);
 

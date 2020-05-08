@@ -18,7 +18,7 @@ datasetPath = fullfile("..","all_data","Detection");
 % Path for lab computer
 figurePath = fullfile("..","Figures");
 
-ri.patients = [7];
+ri.patients = [5];
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Preprocess the data
@@ -46,7 +46,7 @@ for p=ri.patients
 i=1;
 p
 [trainPaths, trainLabels, testPaths, testLabels,valPaths,valLabels] = ...
-    preprocess_detection(datasetPath,patients(ri.patients(p)));
+    preprocess_detection(datasetPath,patients(p));
 
 tic  
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
