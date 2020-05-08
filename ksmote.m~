@@ -1,0 +1,33 @@
+%%
+function ksmote(origPath,ksmotePath,patient,numChannels,downsample)
+
+% Full path to patient data
+patientPath = fullfile(path,patient);
+
+% Paths to ictal data and interictal data for this patient
+[trainData,trainLabels] = prepPatientTrain(patientPath,downsample,numChannels);
+
+
+data_reshaped = zeros(size(trainData,4),downsample*numChannels);
+for i=1:505
+    for c=1:numChannels
+        start = ((c-1)*downsample)+1;
+        stop = j*downsample;
+        data_reshaped(i,start:stop) = trainData(c,:,1,i);
+    end
+end
+
+patientData.data = data_reshaped;
+patientData.labels = double(trainLabels=="ictal");
+
+save(
+
+end
+
+
+%%
+function ksmoteCreate(path,patient,numChannels,downsample)
+
+
+
+end
