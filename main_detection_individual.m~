@@ -64,14 +64,11 @@ tic
 %   Training the Network
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%inputSize = size(preview(dsTrain));
-inputSize = [size(trainPaths,1), size(trainPaths,2)];
+inputSize = size(preview(dsTrain));
 prog = "Starting Training"
 
 %net = buildNetwork_detection(dsTrain,dsVal,inputSize,filterSize,numFilters,...
 %    maxPool);
-net = buildNetwork_detection(trainPaths,dsVal,inputSize,filterSize,numFilters,...
-    maxPool,trainLabels);
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

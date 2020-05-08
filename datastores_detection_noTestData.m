@@ -2,9 +2,10 @@ function [dsTrain, dsTest,dsVal] = datastores_detection_noTestData(trainPaths,..
     trainLabels,valPaths,valLabels,testPaths,testLabels,numChannels)
 
 % Datastore for training data
-dsTrain = imageDatastore([trainPaths{:}],'FileExtensions','.mat','ReadFcn', @(f)...
-    loadData(f,numChannels),'Labels',categorical(trainLabels));
-    
+%dsTrain = imageDatastore([trainPaths{:}],'FileExtensions','.mat','ReadFcn', @(f)...
+%    loadData(f,numChannels),'Labels',categorical(trainLabels));   
+dsTrain = 0;
+
 % Datastore for testing data
 dsTest = imageDatastore(testPaths,'FileExtensions','.mat','ReadFcn', @(f)...
     loadData(f,numChannels),'Labels',categorical(testLabels));

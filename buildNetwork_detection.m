@@ -1,5 +1,5 @@
 function net = buildNetwork_detection(dsTrain,dsVal,inputSize,...
-    filterSize,numFilters,maxPool)  
+    filterSize,numFilters,maxPool,trainLabels)  
 
 layers = [
     imageInputLayer(inputSize,"Name","imageinput_1",'Normalization','none')
@@ -35,6 +35,7 @@ options = trainingOptions('sgdm',...
     'Plot','training-progress');
 
 
-net = trainNetwork(dsTrain,layers,options);
+%net = trainNetwork(dsTrain,layers,options);
+net = trainNetwork(dsTrain,trainLabels,layers,options);
 
 end

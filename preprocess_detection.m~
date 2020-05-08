@@ -1,5 +1,5 @@
 function [trainPaths, trainLabels, testPaths, testLabels, valPaths, valLabels] = ...
-    preprocess_detection(path,patient,numChannels,downsample)
+    preprocess_detection(path,patient,numChannels)
 % Full path to patient data
 patientPath = fullfile(path,patient);
 
@@ -10,7 +10,8 @@ patientPath = fullfile(path,patient);
 [testIctal,testInterictal] = prepTestData(path,patientPath,patient);
 
 
-ictalData = zeros(numChannels,downsample,1,length(ictalPaths));
+ictalData = cell(length(ictalPaths),1);
+fileData = zeros(numChannels,200,1,
 parfor i=1:length(ictalPaths)
     
     file = load(ictalPaths{i});
@@ -23,13 +24,13 @@ parfor i=1:length(ictalPaths)
     end
     
     % Calculate variance of each channel and only take the most variant
-    var =  (1/downsample)*sum((data-mean(data,2)).^2,2);
+    var =  (1/200)*sum((data-mean(data,2)).^2,2);
     [~,idx] = sort(var,'descend');
-    ictalData(:,:,:,i) = data(idx(1:numChannels),:);
+    ictalData{i} = data(idx(1:numChannels),:);
     
 end
     
-interictalData = zeros(numChannels,downsample,1,length(interictalPaths));
+interictalData = cell(length(interictalPaths),1); 
 parfor i=1:length(interictalPaths)
    
     file = load(interictalPaths{i});
@@ -42,23 +43,23 @@ parfor i=1:length(interictalPaths)
     end
     
     % Calculate variance of each channel and only take the most variant
-    var =  (1/downsample)*sum((data-mean(data,2)).^2,2);
+    var =  (1/200)*sum((data-mean(data,2)).^2,2);
     [~,idx] = sort(var,'descend');
-    interictalData(:,:,:,i) = data(idx(1:numChannels),:);
+    interictalData{i} = data(idx(1:numChannels),:);
        
 end
 
 %TODO: change this to do work with k-SMOTE prior to concatenating the ictal
 %and interictal data
-trainPaths = cat(4,ictalData,interictalData);
+trainPaths = vertcat(ictalData,interictalData);
 
 
 % Concatenate the ictal and interictal paths into one for all training data
 %trainPaths = vertcat(ictalPaths,interictalPaths);
 
 % Generate labels for training data
-trainLabels = categorical(vertcat(repmat("ictal",[length(ictalPaths) 1]),...
-    repmat("interictal",[length(interictalPaths) 1])));
+%trainLabels = vertcat(repmat("ictal",[length(ictalPaths) 1]),...
+%    repmat("interictal",[length(interictalPaths) 1]));
 
 
 
