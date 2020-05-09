@@ -9,13 +9,15 @@ patients = ["Dog_"+string(1:4), "Patient_"+string(1:8)];
 
 % Base paths for seizure detection datasets of each patient
 % Path for mounted drive
-datasetPath = fullfile("..","all_data","Detection");
-ksmotePath = fullfile(datasetPath,"ksmote");
+%datasetPath = fullfile("..","all_data","Detection");
+datasetPath = "E:\School\EE5549\Detection";
+%ksmotePath = fullfile(datasetPath,"ksmote");
+ksmotePath = "E:\School\EE5549\Detection\ksmote";
 
 % Path for lab computer
 figurePath = fullfile("..","Figures");
 
-ri.patients = [5];
+patientToRun = 5;
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Preprocess the data
@@ -26,24 +28,25 @@ numFilters = [32];
 maxPool = [2];
 dropout = [0.5]; 
 numChannels = [8];
-stftScenario = [4];
 
 downsample = 200;
 
 % creates cell matrix for every trial version of network
-C = {filterSize,numFilters,maxPool,dropout,numChannels,stftScenario};
+C = {filterSize,numFilters,maxPool,dropout,numChannels};
 D = C;
 [D{:}] = ndgrid(C{:});
 scenarios = cell2mat(cellfun(@(m)m(:),D,'uni',0));
 ri.scenarios = scenarios;
-%save('../Figures/runInfo.mat','-struct','ri');
-%save('../all_data/runInfo.mat','-struct','ri');
 
+numRuns = 5;
+conf = zeros(2,2,numRuns);
+sens = zeros(1,5);
+spec = zeros(1,5);
+AUC = zeros(1,5);
 
 %%
-for p=ri.patients
-i=1;
-p
+for i=1:numRuns
+i
 
 
 [trainData, trainLabels, testPaths, testLabels,valPaths,valLabels] = ...
@@ -79,6 +82,18 @@ prog = "Classifying"
 %   Evaluate Network Performance
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-confusion_value = evaluateResults(testLabels,pred,p,figurePath,scores)
+[conf(:,:,i),sens(i),spec(i),AUC(i)] = ...
+    evaluateResults(testLabels,pred,figurePath,scores);
 toc
 end
+
+
+average_TP = mean(conf(1,1,:))
+average_FP = mean(conf(1,2,:))
+average_FN = mean(conf(2,1,:))
+average_TN = mean(conf(2,2,:))
+
+average_sens = average_TP/(average_TP+average_FN)
+average_spec = average_TN/(average_TN+average_FP)
+
+average_AUC = mean(AUC)

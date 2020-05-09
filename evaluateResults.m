@@ -1,24 +1,30 @@
-function c = evaluateResults(testLabels,pred,scenario,path,scores)
+function [conf,sens,spec,AUC] = evaluateResults(testLabels,pred,path,scores)
 
 target = [(strcmp(testLabels',"ictal"));(strcmp(testLabels',"interictal"))];
 output = [(pred=="ictal")'; (pred=="interictal")'];
 
 [~,~,~,AUC] = perfcurve(testLabels,scores(:,1)',"ictal");
 AUC
-h=figure();
-plotroc(target,output);
-axesUserData=get(gca,'userdata');
-legend(axesUserData.lines,'ictal','interictal');
-title("Patient " + scenario);
-saveas(h,strcat(path,"/ROC",num2str(scenario)),'fig');
+
+%h=figure();
+%plotroc(target,output);
+%axesUserData=get(gca,'userdata');
+%legend(axesUserData.lines,'ictal','interictal');
+%title("Patient " + scenario);
+%saveas(h,strcat(path,"/ROC",num2str(scenario)),'fig');
 %close(h);
 
-g = figure();
-[conf.c,conf.cm,conf.ind,conf.per] = confusion(int8(target),int8(output));
-plotconfusion(int8(target),int8(output));
-title("Patient " + scenario);
-c = conf.c;
+%g = figure();
+[c,cm,ind,per] = confusion(int8(target),int8(output));
+%plotconfusion(int8(target),int8(output));
+%title("Patient " + scenario);
 
-save(strcat(path,"/confusion",num2str(scenario),".mat"),'-struct','conf');
-save(strcat("../all_data/confusion",num2str(scenario),".mat"),'-struct','conf');
+TP = cm(1)
+FP = cm(2)
+FN = cm(3)
+TN = cm(4)
+conf = [TP FP; FN TN];
+sens = TP/(TP+FN)
+spec = TN/(TN+FP)
+
 end
