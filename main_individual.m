@@ -10,12 +10,12 @@ patients = ["Dog_"+string(1:4), "Patient_"+string(1:8)];
 % Base paths for seizure detection datasets of each patient
 % Path for mounted drive
 datasetPath = fullfile("..","all_data","Detection");
-ksmotePath = fullfile("..","seizure_data");
+ksmotePath = fullfile(datasetPath,"ksmote");
 
 % Path for lab computer
 figurePath = fullfile("..","Figures");
 
-ri.patients = [1];
+ri.patients = [5];
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Preprocess the data
@@ -25,7 +25,7 @@ filterSize = [3];
 numFilters = [32];
 maxPool = [2];
 dropout = [0.5]; 
-numChannels = [4];
+numChannels = [8];
 stftScenario = [4];
 
 downsample = 200;
@@ -36,8 +36,8 @@ D = C;
 [D{:}] = ndgrid(C{:});
 scenarios = cell2mat(cellfun(@(m)m(:),D,'uni',0));
 ri.scenarios = scenarios;
-save('../Figures/runInfo.mat','-struct','ri');
-save('../all_data/runInfo.mat','-struct','ri');
+%save('../Figures/runInfo.mat','-struct','ri');
+%save('../all_data/runInfo.mat','-struct','ri');
 
 
 %%

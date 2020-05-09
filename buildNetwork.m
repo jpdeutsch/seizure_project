@@ -9,6 +9,7 @@ layers = [
     reluLayer("Name","relu_1")
     convolution2dLayer([1 3],32,"Padding","same","Name","conv_2")
     batchNormalizationLayer("Name","batch_2")
+    dropoutLayer(0.5)
     maxPooling2dLayer([maxPool maxPool],"Name","pool_2","Padding","same")
     reluLayer("Name","relu_2")
     convolution2dLayer([1 3],32,"Padding","same","Name","conv_3")
@@ -17,6 +18,7 @@ layers = [
     reluLayer("Name","relu_3")
     convolution2dLayer([1 3],32,"Padding","same","Name","conv_4")
     batchNormalizationLayer("Name","batch_4")
+    dropoutLayer(0.5)
     maxPooling2dLayer([maxPool maxPool],"Name","pool_4","Padding","same")
     fullyConnectedLayer(2,"Name","fc")
     softmaxLayer("Name","softmax")
@@ -24,7 +26,7 @@ layers = [
 
 options = trainingOptions('sgdm',...
     'ExecutionEnvironment', 'parallel',...
-    'MaxEpochs', 70,...
+    'MaxEpochs', 100,...
     'MiniBatchSize',64,...
     'Shuffle', 'every-epoch',...
     'Verbose',1,...

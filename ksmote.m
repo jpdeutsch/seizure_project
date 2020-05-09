@@ -9,6 +9,9 @@ patientPath = fullfile(origPath,patient);
 
 numSamples = size(trainData,4);
 data_reshaped = zeros(numSamples,downsample*numChannels);
+
+tic
+%{
 for i=1:numSamples
     for c=1:numChannels
         start = ((c-1)*downsample)+1;
@@ -16,7 +19,15 @@ for i=1:numSamples
         data_reshaped(i,start:stop) = trainData(c,:,1,i);
     end
 end
+%}
 
+tmp = reshape(trainData,[numChannels downsample numSamples]);
+data_reshaped = permute(reshape(permute(tmp,[2 1 3]),...
+    [1 downsample*numChannels numSamples]),[3 2 1]);
+%t = reshape(trainData, [16 200 174]);
+
+
+toc
 patientData.data = data_reshaped;
 patientData.labels = double(trainLabels=="ictal");
 

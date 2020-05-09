@@ -65,20 +65,24 @@ function [valPaths,valLabels,testPaths,testLabels] = splitVal(testIctal,...
     testInterictal,frac)
 
 % Random indices in test ictal data to include in validation
-valSplitIctal = randperm(length(testIctal));
+%valSplitIctal = randperm(length(testIctal));
+valSplitIctal = floor(frac*length(testIctal));
 
 % Random indices in test interictal data to include in validation
-valSplitInterictal = randperm(length(testInterictal));
+%valSplitInterictal = randperm(length(testInterictal));
+valSplitInterictal = floor(frac*length(testInterictal));
 
 % Fraction of test data to include in validation
-fracIctalVal = floor(frac*length(testIctal));
-fracInterictalVal = floor(frac*length(testInterictal));
+%fracIctalVal = floor(frac*length(testIctal));
+%fracInterictalVal = floor(frac*length(testInterictal));
 
 % Ictal validation data
-valIctal = testIctal(valSplitIctal(1:fracIctalVal));
+%valIctal = testIctal(valSplitIctal(1:fracIctalVal));
+valIctal = testIctal(1:valSplitIctal);
 
 % Interictal validation data
-valInterictal = testInterictal(valSplitInterictal(1:fracInterictalVal));
+%valInterictal = testInterictal(valSplitInterictal(1:fracInterictalVal));
+valInterictal = testInterictal(1:valSplitInterictal);
 
 % Concatenate ictal and interictal into one validation path
 valPaths = vertcat(valIctal,valInterictal);
@@ -88,8 +92,10 @@ valLabels = vertcat(repmat("ictal",[length(valIctal),1]),...
     repmat("interictal",[length(valInterictal),1]));
 
 % Take remainingg test data and set to testIctal/testInterictal
-testIctal = testIctal(valSplitIctal(fracIctalVal+1:end));
-testInterictal = testInterictal(valSplitInterictal(fracInterictalVal+1:end));
+%testIctal = testIctal(valSplitIctal(fracIctalVal+1:end));
+testIctal = testIctal(valSplitIctal+1:end);
+%testInterictal = testInterictal(valSplitInterictal(fracInterictalVal+1:end));
+testInterictal = testInterictal(valSplitInterictal+1:end);
 
 % Concatenate ictal and interictal test data and generate labels
 testPaths = vertcat(testIctal,testInterictal);
