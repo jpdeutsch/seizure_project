@@ -9,19 +9,16 @@ patients = ["Dog_"+string(1:4), "Patient_"+string(1:8)];
 
 % Base paths for seizure detection datasets of each patient
 % Path for mounted drive
-%datasetPath = fullfile("..","all_data","Detection");
-datasetPath = "E:\School\EE5549\Detection";
-%ksmotePath = fullfile(datasetPath,"ksmote");
-ksmotePath = "E:\School\EE5549\Detection\ksmote";
+datasetPath = fullfile("..","all_data","Detection");
+%datasetPath = "E:\School\EE5549\Detection";
+ksmotePath = fullfile(datasetPath,"ksmote");
+%ksmotePath = "E:\School\EE5549\Detection\ksmote";
 
 % Path for lab computer
 figurePath = fullfile("..","Figures");
 
-patientToRun = 5;
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% Preprocess the data
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+patientToRun = [6];
+numRuns = 3;
 
 filterSize = [3];
 numFilters = [32];
@@ -31,69 +28,79 @@ numChannels = [8];
 
 downsample = 200;
 
-% creates cell matrix for every trial version of network
-C = {filterSize,numFilters,maxPool,dropout,numChannels};
-D = C;
-[D{:}] = ndgrid(C{:});
-scenarios = cell2mat(cellfun(@(m)m(:),D,'uni',0));
-ri.scenarios = scenarios;
-
-numRuns = 5;
-conf = zeros(2,2,numRuns);
-sens = zeros(1,5);
-spec = zeros(1,5);
-AUC = zeros(1,5);
+disp("Running Each Patient, 8 channels, 2 dropout, KSMOTE")
 
 %%
-for i=1:numRuns
-i
+for p=patientToRun
+    fprintf("\n**********STARTING PATIENT %1.0f**********\n",p)
+
+    conf = zeros(2,2,numRuns);
+    sens = zeros(1,5);
+    spec = zeros(1,5);
+    AUC = zeros(1,5);
 
 
-[trainData, trainLabels, testPaths, testLabels,valPaths,valLabels] = ...
-    preprocess(datasetPath,ksmotePath,patients(p),numChannels,downsample,1);
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    % Preprocess the data
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-tic  
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% Put data into datastores for network
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-[dsTest,dsVal] = datastores(valPaths,valLabels,testPaths,testLabels,numChannels);
+    [trainData, trainLabels, testPaths, testLabels,valPaths,valLabels] = ...
+        preprocess(datasetPath,ksmotePath,patients(p),numChannels,downsample,0);
 
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%   Training the Network
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    % Put data into datastores for network
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    [dsTest,dsVal] = datastores(valPaths,valLabels,testPaths,testLabels,numChannels);
 
-inputSize = [size(trainData,1), size(trainData,2)];
-prog = "Starting Training"
+    
+    for i=1:numRuns
 
-net = buildNetwork(trainData,trainLabels,dsVal,inputSize,filterSize,numFilters,...
-    maxPool);
+        fprintf("\nPatient:%1.0f, Run:%1.0f\n",p,i)
+
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        %   Training the Network
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+        inputSize = [size(trainData,1), size(trainData,2)];
+        disp("Starting Training")
+        
+        tic
+        net = buildNetwork(trainData,trainLabels,dsVal,inputSize,filterSize,numFilters,...
+            maxPool);
 
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%   Run the network on the test data
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        %   Run the network on the test data
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-prog = "Classifying"
-[pred, scores] = classify(net, dsTest);
+        disp("Classifying")
+        [pred, scores] = classify(net, dsTest);
 
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%   Evaluate Network Performance
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        %   Evaluate Network Performance
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-[conf(:,:,i),sens(i),spec(i),AUC(i)] = ...
-    evaluateResults(testLabels,pred,figurePath,scores);
-toc
+        fprintf("\nResults for Patient %1.0f, run %1.0f\n",p,i)
+        [conf(:,:,i),sens(i),spec(i),AUC(i)] = ...
+            evaluateResults(testLabels,pred,figurePath,scores);
+        toc
+    end
+
+
+    fprintf("\n\n**********AVERAGES**********\n")
+    avg_TP = mean(conf(1,1,:));
+    avg_FP = mean(conf(1,2,:));
+    avg_FN = mean(conf(2,1,:));
+    avg_TN = mean(conf(2,2,:));
+    fprintf("Averages: TP=%4.2f, FP=%4.2f, FN=%4.2f, TN=%4.2f\n", avg_TP, avg_FP, avg_FN, avg_TN)
+
+    avg_sens = avg_TP/(avg_TP+avg_FN);
+    avg_spec = avg_TN/(avg_TN+avg_FP);
+    fprintf("Averages: Sensitivity=%.4f, Specificity=%.4f\n",avg_sens,avg_spec)
+
+    avg_AUC = mean(AUC);
+    fprintf("Average AUC: %.4f\n",avg_AUC)
+
 end
-
-
-average_TP = mean(conf(1,1,:))
-average_FP = mean(conf(1,2,:))
-average_FN = mean(conf(2,1,:))
-average_TN = mean(conf(2,2,:))
-
-average_sens = average_TP/(average_TP+average_FN)
-average_spec = average_TN/(average_TN+average_FP)
-
-average_AUC = mean(AUC)

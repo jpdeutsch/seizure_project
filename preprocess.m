@@ -34,7 +34,7 @@ end
 %}
 function [testIctal, testInterictal] = prepTestData(dataPath,patientPath,patient)
 % Load data from .csv into Matlab
-testData = readtable(fullfile(dataPath, "SzDetectionAnswerKey.csv"));
+testData = readtable("SzDetectionAnswerKey.csv");
 
 % Get the test data just for this patient
 patientTests = testData(contains(testData.clip,patient),:);
