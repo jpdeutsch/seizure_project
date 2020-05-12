@@ -10,7 +10,6 @@ patientPath = fullfile(origPath,patient);
 numSamples = size(trainData,4);
 data_reshaped = zeros(numSamples,downsample*numChannels);
 
-tic
 %{
 for i=1:numSamples
     for c=1:numChannels
@@ -27,10 +26,9 @@ data_reshaped = permute(reshape(permute(tmp,[2 1 3]),...
 %t = reshape(trainData, [16 200 174]);
 
 
-toc
 patientData.data = data_reshaped;
 patientData.labels = double(trainLabels=="ictal");
 
-save(fullfile(ksmotePath,strcat(patient,".mat")),'-struct','patientData');
+save(fullfile(ksmotePath,strcat(patient,"_",string(numChannels),"chan.mat")),'-struct','patientData');
 
 end

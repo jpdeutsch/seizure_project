@@ -17,7 +17,7 @@ ksmotePath = fullfile(datasetPath,"ksmote");
 % Path for lab computer
 figurePath = fullfile("..","Figures");
 
-patientToRun = [6];
+patientToRun = [12];
 numRuns = 3;
 
 filterSize = [3];
@@ -28,16 +28,16 @@ numChannels = [8];
 
 downsample = 200;
 
-disp("Running Each Patient, 8 channels, 2 dropout, KSMOTE")
+disp("Running Each Patient, 8 channels, no dropout, KSMOTE")
 
 %%
 for p=patientToRun
     fprintf("\n**********STARTING PATIENT %1.0f**********\n",p)
 
     conf = zeros(2,2,numRuns);
-    sens = zeros(1,5);
-    spec = zeros(1,5);
-    AUC = zeros(1,5);
+    sens = zeros(1,numRuns);
+    spec = zeros(1,numRuns);
+    AUC = zeros(1,numRuns);
 
 
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -45,7 +45,7 @@ for p=patientToRun
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
     [trainData, trainLabels, testPaths, testLabels,valPaths,valLabels] = ...
-        preprocess(datasetPath,ksmotePath,patients(p),numChannels,downsample,0);
+        preprocess(datasetPath,ksmotePath,patients(p),numChannels,downsample,1);
 
 
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

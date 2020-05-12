@@ -9,7 +9,7 @@ if ~useKSMOTE
     [trainData,trainLabels] = prepPatientTrain(patientPath,downsample,numChannels);
 else
     [trainData,trainLabels] = ksmoteLoad(fullfile(KSMOTEpath,...
-        strcat(patient,"_ksmote.mat")),numChannels,downsample);
+        strcat(patient,"_ksmote_",string(numChannels),"chan.mat")),numChannels,downsample);
 end
 
 
