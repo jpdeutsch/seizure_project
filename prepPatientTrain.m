@@ -1,3 +1,11 @@
+%{
+%   given a patient loads in the data and preprocesses it
+%   
+%   inputs
+%       path - path to the patients data
+%       downsample - frequency to downsample to
+%       numChannels - number of channels to include in the data
+%}
 function [trainData,trainLabels] = prepPatientTrain(path,downsample,numChannels)
 
 % Get all ictal clips in patient directory
@@ -14,20 +22,15 @@ ictalPaths = arrayfun(@(f) fullfile(path,ictalClips(f).name),...
 interictalPaths = arrayfun(@(f) fullfile(path,interictalClips(f).name),...
     [1:length(interictalClips)],'uni',false)';
 
-%oversample ictal signals
-%over_idx = randperm(length(ictalPaths),floor(0.2*length(ictalPaths)));
-%ictalPaths = vertcat(ictalPaths,ictalPaths(over_idx));
-
-%undersample interictal signals
-%under_idx = randperm(length(interictalPaths),floor(0.7*length(interictalPaths)));
-%interictalPaths = interictalPaths(under_idx);
-
+% Load the ictal data
 ictalData = zeros(numChannels,downsample,1,length(ictalPaths));
 parfor i=1:length(ictalPaths)
     
-    file = load(ictalPaths{i});
+    file = load(ictalPaths{i}); % load in all ictal data
     
-    freq = ceil(file.freq);
+    freq = ceil(file.freq); % frequency of original data
+
+    % downsample the data
     if freq ~= downsample
         data = resample(file.data',downsample,freq)';
     else 
@@ -41,12 +44,15 @@ parfor i=1:length(ictalPaths)
     
 end
     
+% Load the interictal data
 interictalData = zeros(numChannels,downsample,1,length(interictalPaths));
 parfor i=1:length(interictalPaths)
    
-    file = load(interictalPaths{i});
+    file = load(interictalPaths{i}); % load in all interictal data
     
-    freq = ceil(file.freq);
+    freq = ceil(file.freq); % frequency of original data
+
+    % downsample the data
     if freq ~= downsample
         data = resample(file.data',downsample,freq)';
     else 
@@ -60,11 +66,11 @@ parfor i=1:length(interictalPaths)
        
 end
 
+% Put all training data into 1 4-D cell array
 trainData = cat(4,ictalData,interictalData);
 
 % Generate labels for training data
 trainLabels = categorical(vertcat(repmat("ictal",[length(ictalPaths) 1]),...
     repmat("interictal",[length(interictalPaths) 1])));
-
 
 end
